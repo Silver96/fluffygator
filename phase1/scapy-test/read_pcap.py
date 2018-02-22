@@ -1,5 +1,12 @@
+# Suppress scapy warning regarding ipv6
+# https://stackoverflow.com/questions/24812604/hide-scapy-warning-message-ipv6
+import logging
+logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
+
 from scapy.all import *
 from crypt import crypt
+from Crypto.Cipher import AES
+from binascii import unhexlify, hexlify, b2a_hqx
 
 import zipfile
 import io
@@ -17,6 +24,10 @@ def real_key():
     with open('../key', 'r') as k:
         return k.read().strip('\n')
 
+def real_deobf_key():
+    with open('../key.plain', 'r') as k:
+        return k.read().strip('\n')    
+
 def get_obfkey(key_payload, passwd):
     try:
         passwd = passwd.encode()
@@ -26,23 +37,25 @@ def get_obfkey(key_payload, passwd):
         with archive.open('key', pwd=passwd) as key_file:
             key_file_content = key_file.read().decode().strip('\n')
             return key_file_content
-            
 
 crypted_passwd = get_payload(passwd_packet)
-print(crypted_passwd)
 
 salt = crypted_passwd[:2]
 
 crypted_fluffy = crypt('fluffy', salt)
-print(crypted_fluffy)
 
 
-assert get_obfkey(keyzip_packet.load, 'fluffy') == real_key()
+obf_key = get_obfkey(keyzip_packet.load, 'fluffy')
 
-## TODO install pycrypto for AES encryption
+for i in range(0, len(obf_key)-33):
+    tmp_key = obf_key[i:i+32]
+    if tmp_key == real_deobf_key():
+        deobf_key = unhexlify(tmp_key)
+        break
 
+iv = unhexlify(iv_packet.load[:-1])
 
-
-
-
-
+msg = message_packet.load
+crypto = AES.new(deobf_key, AES.MODE_CBC, iv)
+# msg = crypto.decrypt(msg)
+# print(msg)
