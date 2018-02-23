@@ -14,6 +14,7 @@ int main(int argc, char **argv){
         exit(1);
     }
 
+    // demo();
     unsigned char *key = (unsigned char *)argv[1];
     unsigned char *iv = (unsigned char *)argv[2];
 
@@ -28,7 +29,11 @@ int main(int argc, char **argv){
 
     assert(cipher_size >= 0);
 
+    ciphertext[cipher_size] = 0;
+
     close(fd_encrypted);
+
+    fprintf(stderr, "cipher_size %d\n", cipher_size);
 
     int decrypt_size = decrypt(ciphertext, cipher_size, key, iv, decryptedtext);
 

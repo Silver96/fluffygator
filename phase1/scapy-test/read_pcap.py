@@ -16,10 +16,10 @@ from binascii import unhexlify
 from Crypto.Cipher import AES
 
 # rdpcap comes from scapy and loads in our pcap file
-passwd_packet = rdpcap('../passwd.pcap')[0]
-keyzip_packet = rdpcap('../key.zip.pcap')[0]
-iv_packet = rdpcap('../iv.pcap')[0]
-message_packet = rdpcap('../message.pcap')[0]
+# passwd_packet = rdpcap('../passwd.pcap')[0]
+# keyzip_packet = rdpcap('../key.zip.pcap')[0]
+# iv_packet = rdpcap('../iv.pcap')[0]
+# message_packet = rdpcap('../message.pcap')[0]
 
 def get_payload(packet):
     return packet.load.decode('ascii').strip('\n')
@@ -42,16 +42,16 @@ def get_obfkey(key_payload, passwd):
             key_file_content = key_file.read().decode().strip('\n')
             return key_file_content
 
-crypted_passwd = get_payload(passwd_packet)
+# crypted_passwd = get_payload(passwd_packet)
 
-salt = crypted_passwd[:2]
+# salt = crypted_passwd[:2]
 
-crypted_fluffy = crypt('fluffy', salt)
+# crypted_fluffy = crypt('fluffy', salt)
 
-# print(crypted_fluffy)
+# # print(crypted_fluffy)
 
 
-assert get_obfkey(keyzip_packet.load, 'fluffy') == real_key()
+# assert get_obfkey(keyzip_packet.load, 'fluffy') == real_key()
 
 ## TODO install pycrypto for AES encryption
 
@@ -59,23 +59,39 @@ def get_file_content(filename):
     with open(filename, 'r') as f:
         return f.read().strip('\n')
 
-iv = unhexlify(iv_packet.load[:-1])
+# iv = unhexlify(iv_packet.load[:-1])
 
-# print('iv len(%d)' % len(iv), iv)
+# # print('iv len(%d)' % len(iv), iv)
 
-keystr = get_file_content('../key.plain')
-# print('keystr', keystr)
-key = unhexlify(keystr)
-# print('key len(%d)' % len(key), key)
+# keystr = get_file_content('../key.plain')
+# # print('keystr', keystr)
+# key = unhexlify(keystr)
+# # print('key len(%d)' % len(key), key)
 
 
-aes1 = AES.new(key, AES.MODE_CBC, iv)
+# aes1 = AES.new(key, AES.MODE_CBC, iv)
 
-hellocipher1 = aes1.encrypt(b"CMPS122 is an awesome class!    ")
+# hellocipher1 = aes1.encrypt(b"CMPS122 is an awesome class!    ")
 
-aes2 = AES.new(key, AES.MODE_CBC, iv)
+# aes2 = AES.new(key, AES.MODE_CBC, iv)
 
-hellocipher2 = aes2.encrypt(b"CMPS122 is an awesome class!\x1c\x1c\x1c\x1c")
+# hellocipher2 = aes2.encrypt(b"CMPS122 is an awesome class!\x1c\x1c\x1c\x1c")
 
-print('1', hellocipher1)
-print('2', hellocipher2)
+# print('1', hellocipher1)
+# print('2', hellocipher2)
+
+def get_payload(pcap):
+    return rdpcap(pcap)[0].load
+
+msg_payload = get_payload("fileprof/message.pcap")
+
+cipher = None
+with open("fileprof/message.cipher", "rb") as f:
+    cipher = f.read()
+
+print('msg_pay', len(msg_payload))
+print('cipher', len(cipher))
+
+with open('tmp/test', 'wb') as ct:
+        ct.write(cipher)
+

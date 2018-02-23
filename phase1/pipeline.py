@@ -98,12 +98,14 @@ def possible_keys(obfkey):
 def decrypt_ciphertext(ciphertext, key, iv):
     cipherfile = 'tmp/ciphertext'
     textfile   = 'tmp/plaintext'
-
+    print(len(ciphertext))
     with open(cipherfile, 'wb') as ct:
         ct.write(ciphertext)
 
-    cmd = './decrypt %s %s %s' % (key, iv, cipherfile)
-    proc = subprocess.run(cmd)
+    cmd = 'decryptor/decrypt %s %s %s' % (key, iv, cipherfile)
+    print(cmd)
+
+    proc = subprocess.run(cmd.split(' '))
     assert(proc.returncode == 0)
 
     with open(textfile, 'rt') as pt:
@@ -111,8 +113,8 @@ def decrypt_ciphertext(ciphertext, key, iv):
 
 
 def load_dict():
-    with open('dictionary.txt', 'rt') as d:
-        words = [line.lower() for line in d.readlines()]
+    with open('english_dictionary.txt', 'rt') as d:
+        words = [line.lower() for line in d.readlines()[1:]] ## discard first line comment
         print('Loaded dictionary of %d words' % len(words))
         return set(words)
 
@@ -128,6 +130,8 @@ def makes_sense(msg):
         if word in dictionary:
             count += 1
 
+    print("hit count = %d" % count)
+
     min_hit_number = 0.5 * len(words)
     return count >= min_hit_number
 
@@ -135,6 +139,7 @@ def makes_sense(msg):
 def get_message(ciphertext, obfkey, iv):
 
     for key in possible_keys(obfkey):
+        print('Trying key "%s"' % key)
         decrypted_msg = decrypt_ciphertext(ciphertext, key, iv)
 
         if makes_sense(decrypted_msg):
@@ -158,7 +163,8 @@ def main():
     obfkey = get_obfkey(get_payload(keyzip_pcap), passwd)
     print('obfkey', obfkey)
 
-    iv = unhexlify(get_payload(iv_pcap).strip(b'\n'))
+    # iv = unhexlify(get_payload(iv_pcap).strip(b'\n'))
+    iv = get_payload(iv_pcap).decode().strip('\n')
     print('iv', iv)
 
     ciphertext = get_payload(message_pcap)
