@@ -98,6 +98,7 @@ def possible_keys(obfkey):
 def decrypt_ciphertext(ciphertext, key, iv):
     cipherfile = 'tmp/ciphertext'
     textfile   = 'tmp/plaintext'
+
     print(len(ciphertext))
     with open(cipherfile, 'wb') as ct:
         ct.write(ciphertext)
@@ -105,35 +106,40 @@ def decrypt_ciphertext(ciphertext, key, iv):
     cmd = 'decryptor/decrypt %s %s %s' % (key, iv, cipherfile)
     print(cmd)
 
-    proc = subprocess.run(cmd.split(' '))
-    assert(proc.returncode == 0)
+    try:
+        proc = subprocess.run(cmd.split(' '))
+        assert(proc.returncode == 0)
+    except:
+        ## When decrypting with the wrong key, the program abort
+        return None
+    
 
     with open(textfile, 'rt') as pt:
         return pt.read()
 
 
-def load_dict():
-    with open('english_dictionary.txt', 'rt') as d:
-        words = [line.lower() for line in d.readlines()[1:]] ## discard first line comment
-        print('Loaded dictionary of %d words' % len(words))
-        return set(words)
+# def load_dict():
+#     with open('english_dictionary.txt', 'rt') as d:
+#         words = [line.lower() for line in d.readlines()[1:]] ## discard first line comment
+#         print('Loaded dictionary of %d words' % len(words))
+#         return set(words)
 
 
-def makes_sense(msg):
-    # dictionary = ['fluffy', 'fiona', 'unicorns', 'capitol', 'hill', 'bob', 'fiona', 'london', 'bbc', 'washington']
-    dictionary = load_dict()
-    words = msg.lower().split(' ')
+# def makes_sense(msg):
+#     # dictionary = ['fluffy', 'fiona', 'unicorns', 'capitol', 'hill', 'bob', 'fiona', 'london', 'bbc', 'washington']
+#     dictionary = load_dict()
+#     words = msg.lower().split(' ')
     
-    count = 0
+#     count = 0
 
-    for word in words:
-        if word in dictionary:
-            count += 1
+#     for word in words:
+#         if word in dictionary:
+#             count += 1
 
-    print("hit count = %d" % count)
+#     print("hit count = %d" % count)
 
-    min_hit_number = 0.5 * len(words)
-    return count >= min_hit_number
+#     min_hit_number = 0.5 * len(words)
+#     return count >= min_hit_number
 
 
 def get_message(ciphertext, obfkey, iv):
@@ -142,7 +148,9 @@ def get_message(ciphertext, obfkey, iv):
         print('Trying key "%s"' % key)
         decrypted_msg = decrypt_ciphertext(ciphertext, key, iv)
 
-        if makes_sense(decrypted_msg):
+        # if makes_sense(decrypted_msg):
+        if decrypted_msg:
+            print('key', key)
             return decrypted_msg
 
 
@@ -152,6 +160,11 @@ def main():
     message_pcap = 'packets/%s.message.pcap' % CRUZID
     iv_pcap      = 'packets/%s.iv.pcap'      % CRUZID
 
+    # passwd_pcap  = 'fileprof/passwd.pcap'
+    # keyzip_pcap  = 'fileprof/key.zip.pcap'
+    # message_pcap = 'fileprof/message.pcap'
+    # iv_pcap      = 'fileprof/iv.pcap'
+
     # crypted_passwd = get_crypted_passwd(passwd_pcap)
     # print('crypted_passwd', crypted_passwd)
 
@@ -159,11 +172,11 @@ def main():
     # print('passwd', passwd)
 
     passwd = "dTRrcA"
+    # passwd = 'fluffy'
 
     obfkey = get_obfkey(get_payload(keyzip_pcap), passwd)
     print('obfkey', obfkey)
 
-    # iv = unhexlify(get_payload(iv_pcap).strip(b'\n'))
     iv = get_payload(iv_pcap).decode().strip('\n')
     print('iv', iv)
 
@@ -172,6 +185,8 @@ def main():
     message = get_message(ciphertext, obfkey, iv)
     print('MESSAGE')
     print(message)
+
+    print('plaintext saved in tmp/plaintext')
 
 
 
