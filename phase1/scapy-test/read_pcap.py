@@ -1,5 +1,12 @@
+# Suppress scapy warning regarding ipv6
+# https://stackoverflow.com/questions/24812604/hide-scapy-warning-message-ipv6
+import logging
+logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
+
 from scapy.all import *
 from crypt import crypt
+from Crypto.Cipher import AES
+from binascii import unhexlify, hexlify, b2a_hqx
 
 import zipfile
 import io
@@ -21,6 +28,9 @@ def real_key():
     with open('../key', 'r') as k:
         return k.read().strip('\n')
 
+def real_deobf_key():
+    with open('../key.plain', 'r') as k:
+        return k.read().strip('\n')    
 
 def get_obfkey(key_payload, passwd):
     try:
@@ -31,14 +41,13 @@ def get_obfkey(key_payload, passwd):
         with archive.open('key', pwd=passwd) as key_file:
             key_file_content = key_file.read().decode().strip('\n')
             return key_file_content
-            
 
 crypted_passwd = get_payload(passwd_packet)
-# print(crypted_passwd)
 
 salt = crypted_passwd[:2]
 
 crypted_fluffy = crypt('fluffy', salt)
+
 # print(crypted_fluffy)
 
 
@@ -70,14 +79,3 @@ hellocipher2 = aes2.encrypt(b"CMPS122 is an awesome class!\x1c\x1c\x1c\x1c")
 
 print('1', hellocipher1)
 print('2', hellocipher2)
-
-# aes = AES.new(key, AES.MODE_CBC, iv)
-
-# hello = aes.decrypt(hellocipher)
-
-# print(hello)
-
-
-
-
-
