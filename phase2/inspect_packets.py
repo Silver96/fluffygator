@@ -11,26 +11,66 @@ import io
 
 import sys
 import socket
+import time
 
 from datetime import datetime
 from time import sleep
 from itertools import count
 
+def make_pname(packet_dir, idx):
+    return '%s/packet%d.pcap' % (packet_dir, idx)
+    
 
-def all_packets(start=0):
-    for idx in count(start):
-        pname = 'packets/packet%d.pcap' % idx
+def get_packet(idx, packet_dir):
+    pname = make_pname(packet_dir, idx)
+    packets = rdpcap(pname)
+    return packets[0]
+
+def all_packets(packet_dir):
+    for idx in count(0):
+        pname = make_pname(packet_dir, idx)
         
-        if not os.path.exists(pname) or idx==4:
+        if not os.path.exists(pname):
             raise StopIteration
 
         packets = rdpcap(pname)
         assert(len(packets) == 1)
         yield packets[0]
 
+def inspect(packet_dir):
+    idxs = []
+    for i, packet in enumerate(all_packets(packet_dir)):
+        try:
+            payload_len = len(packet.load)
+            idxs.append(i) 
+        except:
+            pass
+        if i == 2047:
+            break
 
-def inspect(start=0):
-    for packet in all_packets(start):
-        print(packet.payload)
 
-inspect()
+    print('packet idxs len', len(idxs))
+
+    
+    student_tuples = [idxs[i:i+4] for i in range(0, len(idxs), 4)]
+
+    timestamp = time.time()
+    base_dir = 'students/%d/' % timestamp
+    os.mkdir(base_dir)
+
+    for i, t in enumerate(student_tuples):
+        # crypted, zip, iv, ciphertext
+        student_dir = base_dir + str(i) + '/'
+        os.mkdir(student_dir)
+        names = ['passwd', 'zip', 'iv', 'ciphertext']
+        for packet_idx, new_file in zip(t, names):
+            pname = make_pname(packet_dir, packet_idx)
+            new_pname = student_dir + new_file + '.pcap'
+            os.system('cp %s %s' % (pname, new_pname))
+    
+
+
+if len(sys.argv) < 2:
+    print('Usage %s packet_dir' % __file__)
+
+inspect(sys.argv[1])
