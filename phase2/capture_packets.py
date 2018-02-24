@@ -26,10 +26,13 @@ def dump_packet(packet, timestamp, idx):
     with open('packets/%d/packet%d.pcap' % (timestamp, idx), 'wb') as p:
         p.write(packet)
 
+def make_timestamp():
+    return datetime.now().strftime("%I%p%d").lower()
+
 
 def capture():
 
-    timestamp = time.time()
+    timestamp = make_timestamp()
 
     os.system('mkdir packets/%d' % timestamp)
     
