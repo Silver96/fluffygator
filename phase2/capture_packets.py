@@ -23,7 +23,7 @@ ROUTER = ('128.114.59.42', 5001)
 
 
 def dump_packet(packet, timestamp, idx):
-    with open('packets/%d/packet%d.pcap' % (timestamp, idx), 'wb') as p:
+    with open('packets/%s/packet%d.pcap' % (timestamp, idx), 'wb') as p:
         p.write(packet)
 
 def make_timestamp():
@@ -34,7 +34,7 @@ def capture():
 
     timestamp = make_timestamp()
 
-    os.system('mkdir packets/%d' % timestamp)
+    os.system('mkdir packets/%s' % timestamp)
     
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         
