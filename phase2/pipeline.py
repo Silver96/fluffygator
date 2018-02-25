@@ -13,13 +13,6 @@ from time import sleep
 from binascii import unhexlify
 
 NSA_SERVER = ('128.114.59.42', 2001)
-# NSA_SERVER = ('127.0.0.1', 41257)
-
-try:
-    CRUZID = sys.argv[1]
-except:
-    print('Pass CRUZID as first parameter')
-    exit(1)
 
 def get_payload(pcap):
     return rdpcap(pcap)[0].load
@@ -101,48 +94,21 @@ def decrypt_ciphertext(ciphertext, key, iv):
     cipherfile = 'tmp/ciphertext'
     textfile   = 'tmp/plaintext'
 
-    print(len(ciphertext))
     with open(cipherfile, 'wb') as ct:
         ct.write(ciphertext)
 
     cmd = 'decryptor/decrypt %s %s %s' % (key, iv, cipherfile)
-    print(cmd)
+    # print(cmd)
 
     try:
-        proc = subprocess.run(cmd.split(' '))
+        proc = subprocess.run(cmd.split(' '), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         assert(proc.returncode == 0)
+        with open(textfile, 'rt') as pt:
+            return pt.read()
     except:
         ## When decrypting with the wrong key, the program abort
         return None
     
-
-    with open(textfile, 'rt') as pt:
-        return pt.read()
-
-
-# def load_dict():
-#     with open('english_dictionary.txt', 'rt') as d:
-#         words = [line.lower() for line in d.readlines()[1:]] ## discard first line comment
-#         print('Loaded dictionary of %d words' % len(words))
-#         return set(words)
-
-
-# def makes_sense(msg):
-#     # dictionary = ['fluffy', 'fiona', 'unicorns', 'capitol', 'hill', 'bob', 'fiona', 'london', 'bbc', 'washington']
-#     dictionary = load_dict()
-#     words = msg.lower().split(' ')
-    
-#     count = 0
-
-#     for word in words:
-#         if word in dictionary:
-#             count += 1
-
-#     print("hit count = %d" % count)
-
-#     min_hit_number = 0.5 * len(words)
-#     return count >= min_hit_number
-
 
 def get_message(ciphertext, obfkey, iv):
 
@@ -150,31 +116,37 @@ def get_message(ciphertext, obfkey, iv):
         print('Trying key "%s"' % key)
         decrypted_msg = decrypt_ciphertext(ciphertext, key, iv)
 
-        # if makes_sense(decrypted_msg):
         if decrypted_msg:
             print('key', key)
             return decrypted_msg
 
 
+# KmXcsC
+
 def main():
-    passwd_pcap  = 'packets/%s.passwd.pcap'  % CRUZID
-    keyzip_pcap  = 'packets/%s.key.zip.pcap' % CRUZID
-    message_pcap = 'packets/%s.message.pcap' % CRUZID
-    iv_pcap      = 'packets/%s.iv.pcap'      % CRUZID
 
-    # passwd_pcap  = 'fileprof/passwd.pcap'
-    # keyzip_pcap  = 'fileprof/key.zip.pcap'
-    # message_pcap = 'fileprof/message.pcap'
-    # iv_pcap      = 'fileprof/iv.pcap'
+    if len(sys.argv) < 2:
+        print("Usage: %s student_dir" % sys.argv[0])
+        exit(1)
 
-    # crypted_passwd = get_crypted_passwd(passwd_pcap)
-    # print('crypted_passwd', crypted_passwd)
+    passwd = None
 
-    # passwd = crack_passwd(crypted_passwd)
-    # print('passwd', passwd)
+    if len(sys.argv) == 3:
+        passwd = sys.argv[2]
 
-    passwd = "dTRrcA"
-    # passwd = 'fluffy'
+    student_dir = sys.argv[1]
+
+    passwd_pcap  = '%s/passwd.pcap'  % student_dir
+    keyzip_pcap  = '%s/zip.pcap' % student_dir
+    message_pcap = '%s/ciphertext.pcap' % student_dir
+    iv_pcap      = '%s/iv.pcap'      % student_dir
+
+    if not passwd:
+        crypted_passwd = get_crypted_passwd(passwd_pcap)
+        # print('crypted_passwd', crypted_passwd)
+
+        passwd = crack_passwd(crypted_passwd)
+        # print('passwd', passwd)
 
     obfkey = get_obfkey(get_payload(keyzip_pcap), passwd)
     print('obfkey', obfkey)
@@ -185,11 +157,12 @@ def main():
     ciphertext = get_payload(message_pcap)
 
     message = get_message(ciphertext, obfkey, iv)
-    print('MESSAGE')
-    print(message)
+    # print('MESSAGE')
+    # print(message)
 
-    print('plaintext saved in tmp/plaintext')
+    # print('plaintext saved in tmp/plaintext')
 
-
+    with open('%s/plaintext' % student_dir, "wt") as file:
+        file.write(message)
 
 main()

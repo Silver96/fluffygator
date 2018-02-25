@@ -72,5 +72,6 @@ def inspect(packet_dir):
 
 if len(sys.argv) < 2:
     print('Usage %s packet_dir' % __file__)
+    exit(1)
 
 inspect(sys.argv[1])
