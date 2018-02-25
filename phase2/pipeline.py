@@ -1,3 +1,8 @@
+# Suppress scapy warning regarding ipv6
+# https://stackoverflow.com/questions/24812604/hide-scapy-warning-message-ipv6
+import logging
+logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
+
 from scapy.all import *
 from crypt import crypt
 
@@ -53,7 +58,7 @@ def print_time():
 
 
 def crack_passwd(crypted_passwd):
-    listen_sock, (ip, port) = open_listen_socket(51245)
+    listen_sock, (ip, port) = open_listen_socket(0)
 
     print_time()
     send_crack_passwd_req(crypted_passwd, port)
@@ -90,9 +95,9 @@ def possible_keys(obfkey):
         yield obfkey[s:s+32]
 
 
-def decrypt_ciphertext(ciphertext, key, iv):
-    cipherfile = 'tmp/ciphertext'
-    textfile   = 'tmp/plaintext'
+def decrypt_ciphertext(ciphertext, key, iv, student_dir):
+    cipherfile = student_dir + "/ciphertext" 
+    textfile   = student_dir + "/plaintext"
 
     with open(cipherfile, 'wb') as ct:
         ct.write(ciphertext)
@@ -110,11 +115,11 @@ def decrypt_ciphertext(ciphertext, key, iv):
         return None
     
 
-def get_message(ciphertext, obfkey, iv):
+def get_message(ciphertext, obfkey, iv, student_dir):
 
     for key in possible_keys(obfkey):
         print('Trying key "%s"' % key)
-        decrypted_msg = decrypt_ciphertext(ciphertext, key, iv)
+        decrypted_msg = decrypt_ciphertext(ciphertext, key, iv, student_dir)
 
         if decrypted_msg:
             print('key', key)
@@ -156,13 +161,13 @@ def main():
 
     ciphertext = get_payload(message_pcap)
 
-    message = get_message(ciphertext, obfkey, iv)
+    message = get_message(ciphertext, obfkey, iv, student_dir)
     # print('MESSAGE')
     # print(message)
 
     # print('plaintext saved in tmp/plaintext')
 
-    with open('%s/plaintext' % student_dir, "wt") as file:
-        file.write(message)
+    # with open('%s/plaintext' % student_dir, "wt") as file:
+    #     file.write(message)
 
 main()
