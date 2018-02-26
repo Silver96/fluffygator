@@ -105,24 +105,25 @@ def decrypt_ciphertext(ciphertext, key, iv, student_dir):
     cmd = 'decryptor/decrypt %s %s %s %s' % (key, iv, cipherfile, textfile)
 
     try:
-        proc = subprocess.run(cmd.split(' ')) #, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        assert(proc.returncode == 0)
+        proc = subprocess.run(cmd.split(' '), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if proc.returncode != 0:
+            return None
         with open(textfile, 'rt') as pt:
             return pt.read()
     except Exception as e:
         ## When decrypting with the wrong key, the program abort
-        print("exception", e)
+        # print("exception", e)
         return None
     
 
 def get_message(ciphertext, obfkey, iv, student_dir):
 
     for key in possible_keys(obfkey):
-        print('Trying key "%s"' % key)
+        # print('Trying key "%s"' % key)
         decrypted_msg = decrypt_ciphertext(ciphertext, key, iv, student_dir)
 
         if decrypted_msg:
-            print('key', key)
+            # print('key', key)
             return decrypted_msg
 
     # If it gets here without decrypting, report it
@@ -159,14 +160,19 @@ def main():
         # print('passwd', passwd)
 
     obfkey = get_obfkey(get_payload(keyzip_pcap), passwd)
-    print('obfkey', obfkey)
+    # print('obfkey', obfkey)
 
     iv = get_payload(iv_pcap).decode().strip('\n')
-    print('iv', iv)
+    # print('iv', iv)
 
     ciphertext = get_payload(message_pcap)
 
     message = get_message(ciphertext, obfkey, iv, student_dir)
+
+    if message is None:
+        exit(2)
+
+    print("Plaintext obtained for " + student_dir)
     # print('MESSAGE')
     # print(message)
 

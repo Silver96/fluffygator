@@ -8,9 +8,17 @@ def main():
         print("Usage: %s dir_name" % sys.argv[0])
         exit(1)
 
+
+    start = 0
+
+
+    if len(sys.argv) == 3:
+        start = int(sys.argv[2])
+
+
     students_dir = sys.argv[1]
 
-    for student_id in range(len(os.listdir(students_dir))):
+    for student_id in range(start, len(os.listdir(students_dir))):
         student_dir = "%s/%d/" % (students_dir, student_id)
         passwd_file = student_dir + "/passwd.plain"
 
