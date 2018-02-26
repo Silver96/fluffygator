@@ -42,7 +42,7 @@ int main(int argc, char **argv){
 
     int decrypt_size = decrypt(ciphertext, cipher_size, key, iv, decryptedtext);
 
-    int fd_decrypted = open(argv[4], O_WRONLY, 0777);
+    int fd_decrypted = open(argv[4], O_WRONLY | O_TRUNC, 0777);
 
     assert(fd_decrypted >= 0);
 
