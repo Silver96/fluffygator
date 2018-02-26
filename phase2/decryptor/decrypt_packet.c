@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <assert.h>
+#include <string.h>
 #include "crypto.h"
 
 #define MAX_SIZE 100000
@@ -26,6 +27,9 @@ int main(int argc, char **argv){
     unsigned char ciphertext[MAX_SIZE];
     unsigned char decryptedtext[MAX_SIZE];
 
+    memset(ciphertext, 0, MAX_SIZE);
+    memset(decryptedtext, 0, MAX_SIZE);
+
     int cipher_size = read(fd_encrypted, ciphertext, MAX_SIZE);
 
     assert(cipher_size >= 0);
@@ -34,11 +38,11 @@ int main(int argc, char **argv){
 
     close(fd_encrypted);
 
-    fprintf(stderr, "cipher_size %d\n", cipher_size);
+    // fprintf(stderr, "cipher_size %d\n", cipher_size);
 
     int decrypt_size = decrypt(ciphertext, cipher_size, key, iv, decryptedtext);
 
-    int fd_decrypted = open(argv[4], O_WRONLY|O_CREAT, 0777);
+    int fd_decrypted = open(argv[4], O_WRONLY, 0777);
 
     assert(fd_decrypted >= 0);
 
@@ -47,5 +51,7 @@ int main(int argc, char **argv){
     assert(written == decrypt_size);
 
     close(fd_decrypted);
+
+    return 0;
 
 }
