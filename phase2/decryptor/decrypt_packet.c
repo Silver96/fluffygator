@@ -9,8 +9,9 @@
 #define MAX_SIZE 100000
 
 int main(int argc, char **argv){
-    if(argc < 4){
-        printf("Usage: %s key iv packet_file\n", argv[0]);
+    
+    if(argc < 5){
+        printf("Usage: %s key iv packet_file output_file\n", argv[0]);
         exit(1);
     }
 
@@ -37,7 +38,7 @@ int main(int argc, char **argv){
 
     int decrypt_size = decrypt(ciphertext, cipher_size, key, iv, decryptedtext);
 
-    int fd_decrypted = open("tmp/plaintext", O_WRONLY|O_CREAT, 0777);
+    int fd_decrypted = open(argv[4], O_WRONLY|O_CREAT, 0777);
 
     assert(fd_decrypted >= 0);
 

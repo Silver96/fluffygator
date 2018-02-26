@@ -12,8 +12,16 @@ def main():
 
     for student_id in range(len(os.listdir(students_dir))):
         student_dir = "%s/%d/" % (students_dir, student_id)
+        passwd_file = student_dir + "/passwd.plain"
 
-        cmd = "python3 pipeline.py %s" % student_dir
+        passwd = ""
+
+        if os.path.isfile(passwd_file):
+            with open(passwd_file, "rt") as file:
+                passwd = file.read()
+
+
+        cmd = "python3 pipeline.py %s %s" % (student_dir, passwd)
         print(cmd)
 
         subprocess.Popen(cmd.split(' '))

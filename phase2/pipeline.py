@@ -102,16 +102,16 @@ def decrypt_ciphertext(ciphertext, key, iv, student_dir):
     with open(cipherfile, 'wb') as ct:
         ct.write(ciphertext)
 
-    cmd = 'decryptor/decrypt %s %s %s' % (key, iv, cipherfile)
-    # print(cmd)
+    cmd = 'decryptor/decrypt %s %s %s %s' % (key, iv, cipherfile, textfile)
 
     try:
-        proc = subprocess.run(cmd.split(' '), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        proc = subprocess.run(cmd.split(' ')) #, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         assert(proc.returncode == 0)
         with open(textfile, 'rt') as pt:
             return pt.read()
-    except:
+    except Exception as e:
         ## When decrypting with the wrong key, the program abort
+        print("exception", e)
         return None
     
 
@@ -125,8 +125,12 @@ def get_message(ciphertext, obfkey, iv, student_dir):
             print('key', key)
             return decrypted_msg
 
+    # If it gets here without decrypting, report it
+    print("-"*20 + "\nNo key worked for %s :(" % student_dir)
 
-# KmXcsC
+def save_passwd(passwd, student_dir):
+    with open(student_dir + "/passwd.plain", "wt") as file:
+        file.write(passwd)
 
 def main():
 
@@ -151,6 +155,7 @@ def main():
         # print('crypted_passwd', crypted_passwd)
 
         passwd = crack_passwd(crypted_passwd)
+        save_passwd(passwd, student_dir)
         # print('passwd', passwd)
 
     obfkey = get_obfkey(get_payload(keyzip_pcap), passwd)
