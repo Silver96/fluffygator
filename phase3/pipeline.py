@@ -94,6 +94,28 @@ def possible_keys(obfkey):
     for s in range(0, len(obfkey)-31, 1):
         yield obfkey[s:s+32]
 
+def load_dict():  
+    with open('english_dictionary.txt', 'rt') as d:
+        words = [line.lower() for line in d.readlines()[1:]] ## discard first line comment
+        print('Loaded dictionary of %d words' % len(words))
+        return set(words)
+
+
+def makes_sense(msg):
+    # dictionary = ['fluffy', 'fiona', 'unicorns', 'capitol', 'hill', 'bob', 'fiona', 'london', 'bbc', 'washington']
+    dictionary = load_dict()
+    words = msg.lower().split(' ')
+    
+    count = 0
+
+    for word in words:
+        if word in dictionary:
+            count += 1
+
+    print("hit count = %d" % count)
+
+    return count >= 10
+
 
 def decrypt_ciphertext(ciphertext, key, iv, student_dir):
     cipherfile = student_dir + "/ciphertext" 
@@ -123,11 +145,36 @@ def get_message(ciphertext, obfkey, iv, student_dir):
         decrypted_msg = decrypt_ciphertext(ciphertext, key, iv, student_dir)
 
         if decrypted_msg:
-            # print('key', key)
+            print('------------- Decryption key', key)
             return decrypted_msg
 
     # If it gets here without decrypting, report it
     print("-"*20 + "\nNo key worked for %s :(" % student_dir)
+
+def caesar_decrypt(inner_ciphertext):
+
+    alphabet = string.ascii.lowercase
+
+    def shift(c, k):
+        i = alphabet.index(c)
+        i = (i + k) % len(alphabet)
+        return alphabet[i]
+
+    def rot(k):
+        rotated = []
+        for c in inner_ciphertext:
+            if c in alphabet:
+                rotated.append(shift(c, k))
+            else:
+                rotated.append(c)
+
+        return "".join(rotated)
+
+    for k in range(len(alphabet)):
+        rotated = rot(inner_ciphertext.lower(), k)
+        if makes_sense(rotated):
+            return rotated
+
 
 def save_passwd(passwd, student_dir):
     with open(student_dir + "/passwd.plain", "wt") as file:
@@ -148,8 +195,10 @@ def main():
 
     passwd_pcap  = '%s/passwd.pcap'  % student_dir
     keyzip_pcap  = '%s/zip.pcap' % student_dir
-    message_pcap = '%s/ciphertext.pcap' % student_dir
     iv_pcap      = '%s/iv.pcap'      % student_dir
+    message1_pcap = '%s/ciphertext1.pcap' % student_dir
+    message2_pcap = '%s/ciphertext2.pcap' % student_dir
+    message3_pcap = '%s/ciphertext3.pcap' % student_dir
 
     if not passwd:
         crypted_passwd = get_crypted_passwd(passwd_pcap)
@@ -165,9 +214,13 @@ def main():
     iv = get_payload(iv_pcap).decode().strip('\n')
     # print('iv', iv)
 
-    ciphertext = get_payload(message_pcap)
+    ciphertext1 = get_payload(message1_pcap)
+    ciphertext2 = get_payload(message2_pcap)
+    ciphertext3 = get_payload(message3_pcap)
 
-    message = get_message(ciphertext, obfkey, iv, student_dir)
+    message1 = get_message(ciphertext1, obfkey, iv, student_dir)
+    message2 = get_message(ciphertext2, obfkey, iv, student_dir)
+    message3 = get_message(ciphertext3, obfkey, iv, student_dir)
 
     if message is None:
         exit(2)
