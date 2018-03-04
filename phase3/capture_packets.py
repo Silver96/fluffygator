@@ -66,6 +66,7 @@ def capture(max_pkts=None, prefilter=False):
 
         i = 0
         try:
+            print("Started packet capture!")
             while True:
                 # Capture all packets
                 packet = sock.recv(MAX_SIZE)
