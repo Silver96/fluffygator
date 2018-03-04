@@ -5,3 +5,4 @@ phase1/decryptor/decrypt
 phase2/decryptor/decrypt
 
 phase3/passwds/
+/**/__pycache__/

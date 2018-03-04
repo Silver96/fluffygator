@@ -10,6 +10,7 @@ import zipfile
 import io
 import time
 import os
+import re
 
 import sys
 import socket
@@ -46,11 +47,39 @@ def is_passwd_packet(packet):
         return False
 
 
+
+def extract_crypted(payload, re_pat):    
+    m = re_pat.search(payload)
+    passwd = m.group('passwd')
+    print(passwd.decode())
+    return passwd.decode()
+
+
+def inspects(packets, passwd_file, re_pat):
+    for packet in packets:
+        packet = Ether(packet)
+        if packet and hasattr(packet, "load"):
+            crypted = extract_crypted(packet.load, re_pat)
+            passwd_file.write(crypted + '\n')
+            passwd_file.flush()
+            os.fsync(passwd_file.fileno())
+        else:
+            print("="*15)
+            print('NO ATTR LOAD for packet')
+            print(packet)
+            print("="*15)
+
+        
 def capture():
 
     timestamp = make_timestamp()
 
     # os.system('mkdir passwds/')
+
+    ## compile pattern to extract passwds
+    pat = ''.join(chr(x) for x in range(32, 127))
+    pat = re.escape(pat.encode())
+    re_pat = re.compile(b".*(?P<passwd>[" + pat + b"]{13}).*")
 
     passwd_file = open('passwds/passwds%s' % timestamp, 'wt')
     
@@ -61,6 +90,8 @@ def capture():
 
         i = 0
         try:
+
+            packets = []
             while True:
                 ## Capture all packets
                 print('Waiting packet #%d' % i)            
@@ -68,17 +99,13 @@ def capture():
                 ## TODO might read more than one at the same time?
                 packet = sock.recv(MAX_SIZE)[40:]
 
-                packet = Ether(packet)
+                packets.append(packet)
 
-                if hasattr(packet, "load"):
-                    if len(packet.load) == 14:
-                        passwd_file.write(packet.load.decode())
-                        passwd_file.flush()
-                        os.fsync(passwd_file.fileno())
-                        print('Received PASSWD packet #%d' % i)
-                else:
-                    print('Received packet #%d' % i)
+                if len(packets) == 10:
+                    inspects(packets, passwd_file, re_pat)
+                    packets = []
 
+                # print('Received packet #%d' % i)
                 i += 1
 
         except KeyboardInterrupt:
