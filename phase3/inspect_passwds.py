@@ -10,6 +10,7 @@ import zipfile
 import io
 
 import sys
+import signal
 import socket
 from datetime import datetime
 
@@ -65,12 +66,15 @@ def crack_passwd(crypted_passwd):
     sock.close()
 
 
+
 def main():
     # python3 inspect_passwds.py passwds/passwds03_05.57pm | tee passwds/passwd.plain
     if len(sys.argv) != 2:
         print("Usage: %s passwds_file" % sys.argv[0])
         exit(1)
 
+    MAX_NUM_PROCESSES = 10 
+    num_processes = 0
 
     file = open(sys.argv[1], 'rt')
 
@@ -82,6 +86,15 @@ def main():
             time.sleep(1)
             file.seek(where)
         else:
+            time.sleep(5)
+            if num_processes == MAX_NUM_PROCESSES:
+                for _ in range(10):
+                    pid, _ = os.wait()
+                    # print('wait', pid)
+                num_processes = 0
+                time.sleep(60*2)
+
+            num_processes += 1
             if os.fork() == 0:
                 crack_passwd(line.strip('\n'))
                 exit(0)
