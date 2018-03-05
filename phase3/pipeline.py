@@ -11,10 +11,10 @@ import io
 
 import sys
 import socket
+import string
+
 from datetime import datetime
-
 from time import sleep
-
 from binascii import unhexlify
 
 NSA_SERVER = ('128.114.59.42', 2001)
@@ -58,6 +58,16 @@ def print_time():
 
 
 def crack_passwd(crypted_passwd):
+    cmd = "python3 cracker_test.py -p " + crypted_passwd
+    process = subprocess.run(cmd.split(' '), stdout=subprocess.PIPE)
+    if not process.returncode:
+        return process.stdout.decode().strip("\n")
+    else:
+        print("failed")
+        exit(0)
+        return fallback_crack_passwd(crypted_passwd)
+
+def fallback_crack_passwd(crypted_passwd):
     listen_sock, (ip, port) = open_listen_socket(0)
 
     print_time()
@@ -96,23 +106,19 @@ def possible_keys(obfkey):
 
 def load_dict():  
     with open('english_dictionary.txt', 'rt') as d:
-        words = [line.lower() for line in d.readlines()[1:]] ## discard first line comment
-        print('Loaded dictionary of %d words' % len(words))
+        words = [line.lower()[:-1] for line in d.readlines()[1:]] ## discard first line comment
+        # print('Loaded dictionary of %d words' % len(words))
         return set(words)
 
 
 def makes_sense(msg):
-    # dictionary = ['fluffy', 'fiona', 'unicorns', 'capitol', 'hill', 'bob', 'fiona', 'london', 'bbc', 'washington']
     dictionary = load_dict()
     words = msg.lower().split(' ')
-    
     count = 0
 
     for word in words:
         if word in dictionary:
             count += 1
-
-    print("hit count = %d" % count)
 
     return count >= 10
 
@@ -139,9 +145,9 @@ def decrypt_ciphertext(ciphertext, key, iv, student_dir):
     
 
 def get_message(ciphertext, obfkey, iv, student_dir):
-
+    print("Finding key...")
     for key in possible_keys(obfkey):
-        # print('Trying key "%s"' % key)
+        print(key)
         decrypted_msg = decrypt_ciphertext(ciphertext, key, iv, student_dir)
 
         if decrypted_msg:
@@ -153,9 +159,10 @@ def get_message(ciphertext, obfkey, iv, student_dir):
 
 def caesar_decrypt(inner_ciphertext):
 
-    alphabet = string.ascii.lowercase
+    lower_alphabet = string.ascii_lowercase
+    upper_alphabet = string.ascii_uppercase
 
-    def shift(c, k):
+    def shift(c, k, alphabet):
         i = alphabet.index(c)
         i = (i + k) % len(alphabet)
         return alphabet[i]
@@ -163,15 +170,18 @@ def caesar_decrypt(inner_ciphertext):
     def rot(k):
         rotated = []
         for c in inner_ciphertext:
-            if c in alphabet:
-                rotated.append(shift(c, k))
+            if c in lower_alphabet:
+                rotated.append(shift(c, k, lower_alphabet))
+            elif c in upper_alphabet:
+                rotated.append(shift(c, k, upper_alphabet))
             else:
                 rotated.append(c)
 
         return "".join(rotated)
 
-    for k in range(len(alphabet)):
-        rotated = rot(inner_ciphertext.lower(), k)
+    for k in range(len(lower_alphabet)):
+        rotated = rot(k)
+        # print(rotated)
         if makes_sense(rotated):
             return rotated
 
@@ -180,18 +190,19 @@ def save_passwd(passwd, student_dir):
     with open(student_dir + "/passwd.plain", "wt") as file:
         file.write(passwd)
 
-def main():
+def test_plaintexts():
+    try:
+        with open('%s/plaintext1' % student_dir, "rt") as file:
+            file.read()
+        with open('%s/plaintext2' % student_dir, "rt") as file:
+            file.read()
+        with open('%s/plaintext3' % student_dir, "rt") as file:
+            file.read()
+        return True
+    except:
+        return False
 
-    if len(sys.argv) < 2:
-        print("Usage: %s student_dir" % sys.argv[0])
-        exit(1)
-
-    passwd = None
-
-    if len(sys.argv) == 3:
-        passwd = sys.argv[2]
-
-    student_dir = sys.argv[1]
+def main(passwd):
 
     passwd_pcap  = '%s/passwd.pcap'  % student_dir
     keyzip_pcap  = '%s/zip.pcap' % student_dir
@@ -199,6 +210,7 @@ def main():
     message1_pcap = '%s/ciphertext1.pcap' % student_dir
     message2_pcap = '%s/ciphertext2.pcap' % student_dir
     message3_pcap = '%s/ciphertext3.pcap' % student_dir
+
 
     if not passwd:
         crypted_passwd = get_crypted_passwd(passwd_pcap)
@@ -222,16 +234,45 @@ def main():
     message2 = get_message(ciphertext2, obfkey, iv, student_dir)
     message3 = get_message(ciphertext3, obfkey, iv, student_dir)
 
-    if message is None:
+    if message1 is None or message2 is None or message3 is None:
         exit(2)
 
     print("Plaintext obtained for " + student_dir)
     # print('MESSAGE')
-    # print(message)
+    # print("message1", message1)
+    # print("message2", message2)
+    # print("message3", message3)
 
     # print('plaintext saved in tmp/plaintext')
 
-    # with open('%s/plaintext' % student_dir, "wt") as file:
-    #     file.write(message)
+    with open('%s/plaintext1' % student_dir, "wt") as file:
+        file.write(message1)
+    with open('%s/plaintext2' % student_dir, "wt") as file:
+        file.write(message2)
+    with open('%s/plaintext3' % student_dir, "wt") as file:
+        file.write(message3)
 
-main()
+
+def decipher_plaintexts():
+
+    with open('%s/plaintext1' % student_dir, "rt") as file:
+        cipher = file.read()
+        plaintext = caesar_decrypt(cipher)
+        with open('%s/true_plaintext1' % student_dir, "wt") as file_true:
+            file_true.write(plaintext)
+            print("Deciphered plaintext1 saved for %s!" % student_dir)
+
+if len(sys.argv) < 2:
+    print("Usage: %s student_dir" % sys.argv[0])
+    exit(1)
+
+passwd = None
+
+if len(sys.argv) == 3:
+    passwd = sys.argv[2]
+
+student_dir = sys.argv[1]
+
+if not test_plaintexts():
+    main(passwd)
+decipher_plaintexts()
