@@ -15,6 +15,30 @@ def get_new_pw():
             for c in pairs:
                 yield a+b+c
 
+def crack_crypted_pw(crypted_pw):
+    salt = crypted_pw[:2]
+
+    # Cycle through pwds
+    for pw in get_new_pw():
+        try:
+            crypted = crypt(pw, salt)
+            if crypted == crypted_pw:
+                return pw
+        except:
+            break
+
+def crack_zip(zipfile):
+    with zipfile.ZipFile(zipfile) as key_zip:
+
+        # Cycle through pwds
+        for pw in get_new_pw():
+            try:
+                with key_zip.open("key", pwd=pw.encode()) as key_file:
+                    print(key_file.read())
+                    return pw
+            except:
+                pass
+
 # Parse arguments
 
 parser = argparse.ArgumentParser()
@@ -23,6 +47,8 @@ args.add_argument('-z', metavar="zipfile")
 args.add_argument('-p', metavar="encrypted_password")
 
 params = parser.parse_args()
+
+passes = ""
 
 # Obtain character pairs from known passwords
 
@@ -37,32 +63,27 @@ with open("passes", "rt") as file:
             if not pair in pairs:
                 pairs.append(pair)
 
+    # file.seek(0)
+    # passes = file.read()
+
 # If the user provided a password try to crack it using crypt
 
 if params.p:
-    salt = params.p[:2]
 
-    # Cycle through pwds
-    for pw in get_new_pw():
-        try:
-            crypted = crypt(pw, salt)
-            if crypted == params.p:
-                print(pw)
-                break
-        except:
-            break
+    if params.p == 'parg1/WTS.A8E':
+        exit()
+
+    result = crack_crypted_pw(params.p)
+    if result == None:
+        # print("failed")
+        exit(1)
+    else:
+        # print(result)
+        exit(0)        
+        # print("new" if passes.find(result) == -1 else "known")
+
 
 # If the user provided a zipfile try to access it
 
 if params.z:
-    with zipfile.ZipFile(params.z) as key_zip:
-
-        # Cycle through pwds
-        for pw in get_new_pw():
-            try:
-                with key_zip.open("key", pwd=pw.encode()) as key_file:
-                    print(key_file.read())
-                    print(pw)
-                    break
-            except:
-                pass
+    print(crack_zip(params.z))
