@@ -12,6 +12,7 @@ import io
 import sys
 import socket
 import string
+import time
 
 from datetime import datetime
 from time import sleep
@@ -120,7 +121,7 @@ def makes_sense(msg):
         if word in dictionary:
             count += 1
 
-    return count >= 10
+    return count >= 25
 
 
 def decrypt_ciphertext(ciphertext, key, iv, student_dir):
@@ -157,34 +158,54 @@ def get_message(ciphertext, obfkey, iv, student_dir):
     # If it gets here without decrypting, report it
     print("-"*20 + "\nNo key worked for %s :(" % student_dir)
 
-def caesar_decrypt(inner_ciphertext):
 
-    lower_alphabet = string.ascii_lowercase
-    upper_alphabet = string.ascii_uppercase
+lower_alphabet = string.ascii_lowercase
+upper_alphabet = string.ascii_uppercase
+
+def rot(text, *keys):
 
     def shift(c, k, alphabet):
         i = alphabet.index(c)
         i = (i + k) % len(alphabet)
         return alphabet[i]
 
-    def rot(k):
-        rotated = []
-        for c in inner_ciphertext:
-            if c in lower_alphabet:
-                rotated.append(shift(c, k, lower_alphabet))
-            elif c in upper_alphabet:
-                rotated.append(shift(c, k, upper_alphabet))
-            else:
-                rotated.append(c)
+    rotated = []
+    i = 0
+    for c in text:
 
-        return "".join(rotated)
+        if c in lower_alphabet:
+            rotated.append(shift(c, keys[i%len(keys)], lower_alphabet))
+        elif c in upper_alphabet:
+            rotated.append(shift(c, keys[i%len(keys)], upper_alphabet))
+        else:
+            rotated.append(c)
+        i += 1
+
+    return "".join(rotated)
+
+
+
+def caesar_decrypt(inner_ciphertext):
 
     for k in range(len(lower_alphabet)):
-        rotated = rot(k)
+        rotated = rot(inner_ciphertext, k)
         # print(rotated)
         if makes_sense(rotated):
+            print("--------------------- Used %d offset" % k)
             return rotated
 
+def multiple_caesar_decrypt(inner_ciphertext):
+
+    chars = len(lower_alphabet)
+    # for k0 in range(chars):
+    #     for k1 in range(chars):
+    #         for k2 in range(chars):
+    #             for k3 in range(chars):
+    k0, k1, k2, k3 = 20, 19, 18, 17
+    rotated = rot(inner_ciphertext, k0, k1, k2, k3)
+    if makes_sense(rotated):
+        print("--------------------- Used (%d %d %d %d) offset" % (k0, k1, k2, k3))
+        return rotated
 
 def save_passwd(passwd, student_dir):
     with open(student_dir + "/passwd.plain", "wt") as file:
@@ -255,13 +276,37 @@ def main(passwd):
 
 def decipher_plaintexts():
 
+    start_decipher = time.time()
+
     with open('%s/plaintext1' % student_dir, "rt") as file:
         cipher = file.read()
         plaintext = caesar_decrypt(cipher)
+
+        if plaintext is None:
+            exit(1)
+
         with open('%s/true_plaintext1' % student_dir, "wt") as file_true:
             file_true.write(plaintext)
             print("Deciphered plaintext1 saved for %s!" % student_dir)
 
+    first_decipher_end = time.time()
+    print("(%f seconds)" % (first_decipher_end-start_decipher))
+
+    with open('%s/plaintext2' % student_dir, "rt") as file:
+        cipher = file.read()
+        plaintext = multiple_caesar_decrypt(cipher)
+
+        if plaintext is None:
+            exit(1)
+
+        with open('%s/true_plaintext2' % student_dir, "wt") as file_true:
+            file_true.write(plaintext)
+            print("Deciphered plaintext2 saved for %s!" % student_dir)
+
+    second_decipher_end = time.time()
+    print("(%f seconds)" % (second_decipher_end-first_decipher_end))
+
+    print("Deciphering completed in %f seconds" % (time.time()-start_decipher))
 if len(sys.argv) < 2:
     print("Usage: %s student_dir" % sys.argv[0])
     exit(1)
