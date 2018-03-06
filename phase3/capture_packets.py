@@ -13,12 +13,17 @@ from scapy.all import *
 
 MAX_SIZE = 10000
 
+PACKETS_STEP = 6
+
 ROUTER = ('128.114.59.42', 5001)
 
 
 def dump_packet(packet, timestamp, idx):
     with open('packets/%s/packet%d.pcap' % (timestamp, idx), 'wb') as p:
         p.write(packet)
+
+    if idx % PACKETS_STEP == 0:
+        print("Captured %d packets..." % idx)
 
 
 def make_timestamp():

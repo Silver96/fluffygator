@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <assert.h>
 #include <string.h>
+#include <errno.h>
 #include "crypto.h"
 
 #define MAX_SIZE 100000
@@ -42,7 +43,12 @@ int main(int argc, char **argv){
 
     int decrypt_size = decrypt(ciphertext, cipher_size, key, iv, decryptedtext);
 
-    int fd_decrypted = open(argv[4], O_WRONLY | O_TRUNC, 0777);
+    int fd_decrypted = open(argv[4], O_WRONLY | O_TRUNC | O_CREAT, 0777);
+
+    if(fd_decrypted == -1){
+        printf("%s\n", argv[4]);
+        printf("%s\n", strerror(errno));
+    }
 
     assert(fd_decrypted >= 0);
 
