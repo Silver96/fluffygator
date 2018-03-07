@@ -18,6 +18,7 @@ import argparse
 
 from datetime import datetime
 from time import sleep
+from passwds.passwd_cracker import PasswdCracker
 
 NSA_SERVER = ('128.114.59.42', 2001)
 
@@ -33,70 +34,16 @@ def get_payload(pcap):
     return rdpcap(pcap)[0].load
 
 
-def get_crypted_passwd(passwd_pcap):
-    crypted_passwd = get_payload(passwd_pcap)
-    return crypted_passwd.decode().strip('\n')
+def get_passwd(passwd_pcap):
+    crypted_passwd = get_payload(passwd_pcap).decode().strip('\n')
 
+    cracker = PasswdCracker()
+    passwd = cracker.crack(crypted_passwd)
 
-def open_listen_socket(port):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.bind(('', port))
-    sock.listen(1)
-    return sock, sock.getsockname() ## return the (ip, port)
-
-
-def send_crack_passwd_req(crypted_passwd, port):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        
-        while sock.connect_ex(NSA_SERVER) != 0:
-            sleep(1)
-
-        req = "%s 128.114.59.29 %d" % (crypted_passwd, port)
-        
-        reply = None
-        while not reply == 'OK':
-            print('Sending "%s"' % req)
-            sock.send(req.encode())
-        
-            reply = sock.recv(10).decode().strip('\n')
-            print('Received "%s"' % reply)
-
-
-def print_time():
-    now = datetime.now().time()
-    print("\n------ %d:%d:%d" % (now.hour, now.minute, now.second))
-
-
-def crack_passwd(crypted_passwd):
-    cmd = "python3 cracker_test.py -p " + crypted_passwd
-    process = subprocess.run(cmd.split(' '), stdout=subprocess.PIPE)
-    if not process.returncode:
-        return process.stdout.decode().strip("\n")
-    else:
-        print("failed")
-        exit(0)
-        return fallback_crack_passwd(crypted_passwd)
-
-def fallback_crack_passwd(crypted_passwd):
-    listen_sock, (ip, port) = open_listen_socket(0)
-
-    print_time()
-    send_crack_passwd_req(crypted_passwd, port)
-    
-    sock, _ = listen_sock.accept()
-
-    reply = sock.recv(100).decode()
-    
-    listen_sock.close()
-    sock.close()
-
-    ## reply =  "<crypted_password> <passwd>\n"
-    _, passwd = reply.strip('\n').split(' ')
-
-    print('Received passwd = "%s"' % passwd)
+    if not passwd:
+        passwd = cracker.crack_nsa(crypted_passwd)
 
     return passwd
-
 
 def get_obfkey(key_payload, passwd):
     try:
@@ -128,21 +75,23 @@ def decrypt_ciphertext(ciphertext, key, iv, student_dir):
         # print("exception", e)
         return None
     
-def get_message(ciphertext, obfkey, iv, student_dir):
+def get_message(ciphertext, obfkey, iv, student_dir, AES_key):
 
     def possible_keys(obfkey):
+        if AES_key:
+            yield AES_key
+
         obfkey = obfkey.strip('\n')
         for s in range(0, len(obfkey)-31, 1):
             yield obfkey[s:s+32]
-        
+
     print("Finding key...")
     for key in possible_keys(obfkey):
-        print(key)
         decrypted_msg = decrypt_ciphertext(ciphertext, key, iv, student_dir)
-
+        print(key)
         if decrypted_msg:
             print('------------- Decryption key', key)
-            return decrypted_msg
+            return decrypted_msg, key
 
     # If it gets here without decrypting, report it
     print("-"*20 + "\nNo key worked for %s :(" % student_dir)
@@ -161,6 +110,36 @@ def test_plaintexts():
         return True
     except:
         return False
+
+def get_plaintexts(passwd):
+
+    passwd_pcap  = '%s/passwd.pcap'  % student_dir
+    keyzip_pcap  = '%s/zip.pcap' % student_dir
+    iv_pcap      = '%s/iv.pcap'      % student_dir
+
+    if not passwd:
+        passwd = get_passwd(passwd_pcap)
+        save_passwd(passwd, student_dir)
+
+    obfkey = get_obfkey(get_payload(keyzip_pcap), passwd)
+    AES_key = None
+
+    iv = get_payload(iv_pcap).decode().strip('\n')
+
+    for i in range(msg_count):
+
+        message_pcap = '%s/ciphertext%d.pcap' % (student_dir, i)
+        ciphertext = get_payload(message_pcap)
+
+        message, AES_key = get_message(ciphertext, obfkey, iv, student_dir, AES_key)
+
+        if message is None:
+            exit(2)
+
+        with open('%s/plaintext%d' % (student_dir, i) "wt") as file:
+            file.write(message)
+
+        print("Plaintext %d obtained for %s" % (i, student_dir))
 
 def decipher_plaintexts():
 
@@ -200,48 +179,12 @@ def decipher_plaintexts():
 
     print("Deciphering completed in %f seconds" % (time.time()-start_decipher))
 
-def main(passwd):
-
-    passwd_pcap  = '%s/passwd.pcap'  % student_dir
-    keyzip_pcap  = '%s/zip.pcap' % student_dir
-    iv_pcap      = '%s/iv.pcap'      % student_dir
-
-    if not passwd:
-        crypted_passwd = get_crypted_passwd(passwd_pcap)
-        # print('crypted_passwd', crypted_passwd)
-
-        passwd = crack_passwd(crypted_passwd)
-        save_passwd(passwd, student_dir)
-        # print('passwd', passwd)
-
-    obfkey = get_obfkey(get_payload(keyzip_pcap), passwd)
-    # print('obfkey', obfkey)
-
-    iv = get_payload(iv_pcap).decode().strip('\n')
-    # print('iv', iv)
-
-    for i in range(msg_count):
-
-        message_pcap = '%s/ciphertext%d.pcap' % (student_dir, i)
-        ciphertext = get_payload(message_pcap)
-
-        message = get_message(ciphertext, obfkey, iv, student_dir)
-
-        if message is None:
-            exit(2)
-
-
-        with open('%s/plaintext%d' % (student_dir, i) "wt") as file:
-            file.write(message)
-
-        print("Plaintext %d obtained for %s" % (i, student_dir))
-
 args = parse_args()
 
 student_dir = args.student_dir
 msg_count = args.msg_count
 
 if not test_plaintexts():
-    main(args.p)
+    get_plaintexts(args.p)
 
 decipher_plaintexts()
