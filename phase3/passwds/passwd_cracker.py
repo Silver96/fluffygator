@@ -18,11 +18,50 @@ def gen_pairs_from_passwds(filename):
 
     return pairs
 
+def open_listen_socket(port):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind(('', port))
+    sock.listen(1)
+    return sock, sock.getsockname() ## return the (ip, port)
 
+
+def send_crack_passwd_req(crypted_passwd, port):    
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        
+        while sock.connect_ex(('128.114.59.42', 2001)) != 0:
+            sleep(1)
+
+        req = "%s 128.114.59.29 %d" % (crypted_passwd, port)
+        
+        reply = None
+        while not reply == 'OK':
+            sock.send(req.encode())
+            reply = sock.recv(10).decode().strip('\n')
+            sleep(2)
+
+def crack_passwd_nsa(crypted_passwd):
+
+    def print_time():
+        now = datetime.now().time()
+        print("\n------ %d:%d:%d" % (now.hour, now.minute, now.second))
+
+    listen_sock, (ip, port) = open_listen_socket(0)
+
+    print_time()
+    send_crack_passwd_req(crypted_passwd, port)
+    
+    sock, _ = listen_sock.accept()
+    
+    reply = sock.recv(100).decode()
+    _, passwd = reply.strip(' \n').split(" ")
+
+    listen_sock.close()
+    sock.close()
+    return passwd
 
 class PasswdCracker:
 
-    def __init__(self, pair_dict_file='pairs.pickle'): ## TODO change this file
+    def __init__(self, pair_dict_file='pairs.pickle'):
         
         self.pairs_filename = os.path.abspath(os.path.join(os.path.dirname(__file__), pair_dict_file))
         
@@ -53,6 +92,8 @@ class PasswdCracker:
                 return pw
         return None
 
+    def crack_nsa(self, crypted_pw):
+        return crack_passwd_nsa(crypted_pw)
 
     def append_to_dictionary(self, passwd):
         if len(passwd) % 2 == 1:
