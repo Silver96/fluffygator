@@ -52,7 +52,7 @@ def inspect(packet_dir):
     student_tuples = [idxs[i:i+pkts_per_student] for i in range(0, len(idxs), pkts_per_student)]
 
     timestamp = time.time()
-    base_dir = 'students/' + os.path.basename(packet_dir) + "/"
+    base_dir = 'students/' + os.path.basename(os.path.normpath(packet_dir)) + "/"
     os.mkdir(base_dir)
 
     for i, t in enumerate(student_tuples):

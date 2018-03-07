@@ -104,7 +104,7 @@ def save_passwd(passwd, student_dir):
 def test_plaintexts():
     try:
         for i in range(msg_count):
-            with open('%s/plaintext%d' % (student_dir, i+1), "rt") as file:
+            with open('%s/plaintext%d' % (student_dir, i), "rt") as file:
                 file.read()
 
         return True
@@ -136,7 +136,7 @@ def get_plaintexts(passwd):
         if message is None:
             exit(2)
 
-        with open('%s/plaintext%d' % (student_dir, i) "wt") as file:
+        with open('%s/plaintext%d' % (student_dir, i), "wt") as file:
             file.write(message)
 
         print("Plaintext %d obtained for %s" % (i, student_dir))

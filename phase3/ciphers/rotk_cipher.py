@@ -1,8 +1,9 @@
 import ciphers.common
 
-default_key = 13
+default_key = 12
+# default_key = 13
 
-def caesar_decrypt(inner_ciphertext):
+def rotk(inner_ciphertext):
 
     k = default_key
 
@@ -14,7 +15,10 @@ def caesar_decrypt(inner_ciphertext):
             rotated = ciphers.common.rot(inner_ciphertext, k)
             if ciphers.common.makes_sense(rotated):
                 break
-    
+
+    if not ciphers.common.makes_sense(rotated):
+        return None
+
     print("--------------------- Used %d offset" % k)
     return rotated
     
