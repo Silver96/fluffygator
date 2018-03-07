@@ -1,8 +1,5 @@
-phase1/packets/
-phase1/tmp/
-phase1/decryptor/decrypt
-
-phase2/decryptor/decrypt
-
 phase3/passwds/
 /**/__pycache__/
+
+phase2/
+phase1/
