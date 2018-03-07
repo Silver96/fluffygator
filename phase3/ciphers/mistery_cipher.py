@@ -26,7 +26,7 @@ def generate_dictionary():
 
     test_ciphertext = ""
 
-    with open("cipher3", "rt") as file:
+    with open("ciphers/cipher3", "rt") as file:
         for line in file.readlines():
             # line = line.strip(" \n")
             test_ciphertext += line
@@ -47,7 +47,7 @@ def generate_dictionary():
         pair = test_ciphertext[i:i+2]
         print(key_dict[pair], end="")
 
-    with open("key_dict", "wt") as file:
+    with open("ciphers/key_dict", "wt") as file:
         json.dump(key_dict, file)
 
 def decipher_plaintext(filename, key_dict):
@@ -63,11 +63,11 @@ def decipher_plaintext(filename, key_dict):
             print(key_dict[pair], end="")
             f_out.write(key_dict[pair])
 
-if not os.path.isfile("key_dict"):
-    generate_dictionary()
+# if not os.path.isfile("key_dict"):
+#     generate_dictionary()
 
-key_dict = None
-with open("key_dict", "rt") as file:
-    key_dict = json.load(file)
+# key_dict = None
+# with open("ciphers/key_dict", "rt") as file:
+#     key_dict = json.load(file)
 
-decipher_plaintext(sys.argv[1], key_dict)
+# decipher_plaintext(sys.argv[1], key_dict)

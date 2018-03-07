@@ -13,6 +13,7 @@ import sys
 import socket
 import string
 import time
+import ciphers
 
 from datetime import datetime
 from time import sleep
@@ -105,25 +106,6 @@ def possible_keys(obfkey):
     for s in range(0, len(obfkey)-31, 1):
         yield obfkey[s:s+32]
 
-def load_dict():  
-    with open('english_dictionary.txt', 'rt') as d:
-        words = [line.lower()[:-1] for line in d.readlines()[1:]] ## discard first line comment
-        # print('Loaded dictionary of %d words' % len(words))
-        return set(words)
-
-
-def makes_sense(msg):
-    dictionary = load_dict()
-    words = msg.lower().split(' ')
-    count = 0
-
-    for word in words:
-        if word in dictionary:
-            count += 1
-
-    return count >= 25
-
-
 def decrypt_ciphertext(ciphertext, key, iv, student_dir):
     cipherfile = student_dir + "/ciphertext" 
     textfile   = student_dir + "/plaintext"
@@ -157,55 +139,6 @@ def get_message(ciphertext, obfkey, iv, student_dir):
 
     # If it gets here without decrypting, report it
     print("-"*20 + "\nNo key worked for %s :(" % student_dir)
-
-
-lower_alphabet = string.ascii_lowercase
-upper_alphabet = string.ascii_uppercase
-
-def rot(text, *keys):
-
-    def shift(c, k, alphabet):
-        i = alphabet.index(c)
-        i = (i + k) % len(alphabet)
-        return alphabet[i]
-
-    rotated = []
-    i = 0
-    for c in text:
-
-        if c in lower_alphabet:
-            rotated.append(shift(c, keys[i%len(keys)], lower_alphabet))
-        elif c in upper_alphabet:
-            rotated.append(shift(c, keys[i%len(keys)], upper_alphabet))
-        else:
-            rotated.append(c)
-        i += 1
-
-    return "".join(rotated)
-
-
-
-def caesar_decrypt(inner_ciphertext):
-
-    for k in range(len(lower_alphabet)):
-        rotated = rot(inner_ciphertext, k)
-        # print(rotated)
-        if makes_sense(rotated):
-            print("--------------------- Used %d offset" % k)
-            return rotated
-
-def multiple_caesar_decrypt(inner_ciphertext):
-
-    chars = len(lower_alphabet)
-    # for k0 in range(chars):
-    #     for k1 in range(chars):
-    #         for k2 in range(chars):
-    #             for k3 in range(chars):
-    k0, k1, k2, k3 = 20, 19, 18, 17
-    rotated = rot(inner_ciphertext, k0, k1, k2, k3)
-    if makes_sense(rotated):
-        print("--------------------- Used (%d %d %d %d) offset" % (k0, k1, k2, k3))
-        return rotated
 
 def save_passwd(passwd, student_dir):
     with open(student_dir + "/passwd.plain", "wt") as file:
@@ -280,7 +213,7 @@ def decipher_plaintexts():
 
     with open('%s/plaintext1' % student_dir, "rt") as file:
         cipher = file.read()
-        plaintext = caesar_decrypt(cipher)
+        plaintext = ciphers.rotk(cipher)
 
         if plaintext is None:
             exit(1)
@@ -294,7 +227,7 @@ def decipher_plaintexts():
 
     with open('%s/plaintext2' % student_dir, "rt") as file:
         cipher = file.read()
-        plaintext = multiple_caesar_decrypt(cipher)
+        plaintext = ciphers.rotkn(cipher)
 
         if plaintext is None:
             exit(1)
@@ -307,6 +240,8 @@ def decipher_plaintexts():
     print("(%f seconds)" % (second_decipher_end-first_decipher_end))
 
     print("Deciphering completed in %f seconds" % (time.time()-start_decipher))
+
+
 if len(sys.argv) < 2:
     print("Usage: %s student_dir" % sys.argv[0])
     exit(1)
