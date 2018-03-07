@@ -2,6 +2,8 @@ import json
 import os
 import sys
 
+from string import punctuation, digits
+
 def generate_dictionary():
     dictionary = ["a b c d e",
                   "f g h i j",
@@ -21,21 +23,18 @@ def generate_dictionary():
 
 def decipher_plaintext(ciphertext, key_dict):
     result = ""
-    try:
-        for i in range(0, len(ciphertext), 2):
-            pair = ciphertext[i:i+2]
-            if pair in key_dict:
-                result += key_dict[pair]
-            elif pair == "  ":
-                result += " "
-            else:
-                result += pair.strip(" ")
+    for i in range(0, len(ciphertext), 2):
+        pair = ciphertext[i:i+2]
+        if pair in key_dict:
+            result += key_dict[pair]
+        elif pair == "  ":
+            result += " "
+        elif pair.strip(" ") in punctuation+digits+"\n":
+            result += pair.strip(" ")
+        else:
+            return None
 
-        return result
-
-    except Exception as e:
-        print("Exception", e)
-        return None
+    return result
 
 
 def mistery(cipher):
