@@ -46,25 +46,27 @@ def inspect(packet_dir):
         except:
             pass
 
-
-    print('packet idxs len', len(idxs))
+    # print('packet idxs len', len(idxs))
 
     pkts_per_student = 6
     student_tuples = [idxs[i:i+pkts_per_student] for i in range(0, len(idxs), pkts_per_student)]
 
     timestamp = time.time()
-    base_dir = 'students/%d/' % timestamp
+    base_dir = 'students/' + os.path.basename(packet_dir) + "/"
     os.mkdir(base_dir)
 
     for i, t in enumerate(student_tuples):
         # crypted, zip, iv, ciphertext
         student_dir = base_dir + str(i) + '/'
         os.mkdir(student_dir)
-        names = ['passwd', 'zip', 'iv', 'ciphertext1', 'ciphertext2', 'ciphertext3']
+        names = ['passwd', 'zip', 'iv'] + ['ciphertext%d' % x for x in range(pkts_per_student-3)]
         for packet_idx, new_file in zip(t, names):
             pname = make_pname(packet_dir, packet_idx)
             new_pname = student_dir + new_file + '.pcap'
             os.system('cp %s %s' % (pname, new_pname))
+
+        if i == 65:
+            break
     
 
 
