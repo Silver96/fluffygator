@@ -4,6 +4,7 @@ import os
 import subprocess
 
 FAILED_LIST = "failed"
+PIPELINE_FILE = "pipeline_no_deobf.py"
 
 def main():
     if len(sys.argv) < 3:
@@ -18,7 +19,7 @@ def main():
         for student_id in range(len(os.listdir(students_dir))):
             student_dir = "%s/%d/" % (students_dir, student_id)
             
-            cmd = "python3 pipeline.py %s %d" % (student_dir, msg_count)
+            cmd = "python3 %s %s %d" % (PIPELINE_FILE, student_dir, msg_count)
             
             if subprocess.run(cmd.split(' ')).returncode != 0:
                 f_failed.write(str(student_id))
