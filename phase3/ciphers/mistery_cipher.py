@@ -31,8 +31,6 @@ def generate_dictionary():
             # line = line.strip(" \n")
             test_ciphertext += line
 
-    print(test_ciphertext)
-
     for i, c in enumerate(test_plaintext):
         c = c.lower()
         pair = test_ciphertext[2*i:2*i+2]
@@ -45,29 +43,35 @@ def generate_dictionary():
 
     for i in range(0, len(test_ciphertext), 2):
         pair = test_ciphertext[i:i+2]
-        print(key_dict[pair], end="")
+        # print(key_dict[pair], end="")
+
+    for i in range(10):
+        key_dict[" %d" % i] = str(i)
+
+    # key_dict["\n "] = "\n"
 
     with open("ciphers/key_dict", "wt") as file:
         json.dump(key_dict, file)
 
-def decipher_plaintext(filename, key_dict):
-    ciphertext = ""
-
-    with open(filename, "rt") as f_in:
-        for line in f_in.readlines():
-            ciphertext += line
-
-    with open(filename+"_deciphered", "wt") as f_out:
+def decipher_plaintext(ciphertext, key_dict):
+    result = ""
+    try:
         for i in range(0, len(ciphertext), 2):
             pair = ciphertext[i:i+2]
-            print(key_dict[pair], end="")
-            f_out.write(key_dict[pair])
+            result += key_dict[pair]
 
-# if not os.path.isfile("key_dict"):
-#     generate_dictionary()
+        return result
+    except Exception as e:
+        print("Exception", e)
+        return None
 
-# key_dict = None
-# with open("ciphers/key_dict", "rt") as file:
-#     key_dict = json.load(file)
 
-# decipher_plaintext(sys.argv[1], key_dict)
+def mistery(cipher):
+    if not os.path.isfile("ciphers/key_dict"):
+        generate_dictionary()
+
+    key_dict = None
+    with open("ciphers/key_dict", "rt") as file:
+        key_dict = json.load(file)
+
+    return decipher_plaintext(cipher, key_dict)

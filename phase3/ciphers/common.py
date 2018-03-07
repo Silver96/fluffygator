@@ -29,6 +29,7 @@ def rot(text, *keys):
 
     return "".join(rotated)
 
+# TODO: find a better way to avoid false positives
 def makes_sense(msg):
 
     def load_dict():

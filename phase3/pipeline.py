@@ -155,10 +155,10 @@ def decipher_plaintexts():
             plaintext = ciphers.rotk(cipher)
 
             if not plaintext:
-                plaintext = ciphers.rotkn(cipher)
+                plaintext = ciphers.mistery(cipher)
 
             if not plaintext:
-                plaintext = ciphers.mistery(cipher)
+                plaintext = ciphers.rotkn(cipher)
 
             if not plaintext:
                 print("-" * 20 + "Failed " + student_dir)
