@@ -6,17 +6,13 @@ logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
 from crypt import crypt
 
-import zipfile
-import io
-
 import sys
-import signal
 import socket
 from datetime import datetime
 
 from time import sleep
 
-from binascii import unhexlify
+from passwd_cracker import PasswdCracker
 
 NSA_SERVER = ('128.114.59.42', 2001)
 
@@ -50,7 +46,7 @@ def print_time():
     print("\n------ %d:%d:%d" % (now.hour, now.minute, now.second))
 
 
-def crack_passwd(crypted_passwd):
+def crack_passwd_nsa(crypted_passwd):
     listen_sock, (ip, port) = open_listen_socket(0)
 
     # print_time()
@@ -59,11 +55,13 @@ def crack_passwd(crypted_passwd):
     sock, _ = listen_sock.accept()
     
     reply = sock.recv(100).decode()
-    print(reply.strip('\n'))
+    passwd = reply.strip(' \n')
+    print(passwd)
     sys.stdout.flush()
 
     listen_sock.close()
     sock.close()
+    return passwd
 
 
 
@@ -76,28 +74,47 @@ def main():
     MAX_NUM_PROCESSES = 10 
     num_processes = 0
 
-    file = open(sys.argv[1], 'rt')
+    cracker = PasswdCracker()
 
+    crypted_file = open(sys.argv[1], 'rt')
+    
+    nsa_counter = 0
     # https://stackoverflow.com/questions/3290292/read-from-a-log-file-as-its-being-written-using-python
     while True:
-        where = file.tell()
-        line  = file.readline()
+        where = crypted_file.tell()
+        line  = crypted_file.readline()
+
         if not line:
             time.sleep(1)
-            file.seek(where)
-        else:
-            time.sleep(5)
-            if num_processes == MAX_NUM_PROCESSES:
-                for _ in range(10):
-                    pid, _ = os.wait()
-                    # print('wait', pid)
-                num_processes = 0
-                time.sleep(60*2)
+            crypted_file.seek(where)
+            continue
 
-            num_processes += 1
-            if os.fork() == 0:
-                crack_passwd(line.strip('\n'))
-                exit(0)
+        time.sleep(5)
+        crypted = line.strip(' \n')
+
+        passwd = cracker.crack(crypted)
+        if passwd:
+            print('cracked')
+            continue
+
+        print('-'*20 + ' NSA %d' % nsa_counter)
+        nsa_counter += 1
+
+        if num_processes == MAX_NUM_PROCESSES:
+            for _ in range(10):
+                pid, _ = os.wait()
+                # print('wait', pid)
+            num_processes = 0
+            time.sleep(20)
+
+        num_processes += 1
+        if os.fork() == 0:
+            passwd = crack_passwd_nsa(crypted)
+            cracker.append_to_dictionary(passwd)
+            exit(0)
+
+        ## Reload the dictionary for parent main process
+        cracker.reload_dictionary()
 
 
 main()

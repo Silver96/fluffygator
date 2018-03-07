@@ -25,27 +25,13 @@ ROUTER = ('128.114.59.42', 5001)
 
 
 def dump_packet(packet, timestamp, idx):
-    with open('passwds/%s/passwd%07d.pcap' % (timestamp, idx), 'wb') as p:
+    with open('capture_folder/%s/passwd%07d.pcap' % (timestamp, idx), 'wb') as p:
         p.write(packet)
 
 
 def make_timestamp():
     ## DayOfMonth_HH.MM[am|pm]
     return datetime.now().strftime("%d_%I.%M%p").lower()
-
-
-def is_passwd_packet(packet):
-    filename = 'passwds/tmp.pcap'
-    with open(filename, 'wb') as p:
-        p.write(packet)
-    packet = rdpcap(filename)[0]
-    try:
-        length = len(packet.load)
-        print(length)
-        return length == 13 + 1
-    except:
-        return False
-
 
 
 def extract_crypted(payload, re_pat):    
@@ -81,7 +67,7 @@ def capture():
     pat = re.escape(pat.encode())
     re_pat = re.compile(b".*(?P<passwd>[" + pat + b"]{13}).*")
 
-    passwd_file = open('passwds/passwds%s' % timestamp, 'wt')
+    passwd_file = open('capture_folder/passwds%s' % timestamp, 'wt')
     
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         
