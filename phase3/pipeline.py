@@ -11,15 +11,23 @@ import io
 
 import sys
 import socket
-import string
 import time
 import ciphers
 
+import argparse
+
 from datetime import datetime
 from time import sleep
-from binascii import unhexlify
 
 NSA_SERVER = ('128.114.59.42', 2001)
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("student_dir", help="Working directory for the script")
+    parser.add_argument("msg_count", type=int, help="Number of ciphertext messages")
+    parser.add_argument("-p", metavar="password", help="Password (used instead of password cracking)")
+
+    return parser.parse_args()
 
 def get_payload(pcap):
     return rdpcap(pcap)[0].load
@@ -100,12 +108,6 @@ def get_obfkey(key_payload, passwd):
             key_file_content = key_file.read().decode().strip('\n')
             return key_file_content
 
-
-def possible_keys(obfkey):
-    obfkey = obfkey.strip('\n')
-    for s in range(0, len(obfkey)-31, 1):
-        yield obfkey[s:s+32]
-
 def decrypt_ciphertext(ciphertext, key, iv, student_dir):
     cipherfile = student_dir + "/ciphertext" 
     textfile   = student_dir + "/plaintext"
@@ -126,8 +128,13 @@ def decrypt_ciphertext(ciphertext, key, iv, student_dir):
         # print("exception", e)
         return None
     
-
 def get_message(ciphertext, obfkey, iv, student_dir):
+
+    def possible_keys(obfkey):
+        obfkey = obfkey.strip('\n')
+        for s in range(0, len(obfkey)-31, 1):
+            yield obfkey[s:s+32]
+        
     print("Finding key...")
     for key in possible_keys(obfkey):
         print(key)
@@ -144,27 +151,60 @@ def save_passwd(passwd, student_dir):
     with open(student_dir + "/passwd.plain", "wt") as file:
         file.write(passwd)
 
+# Test if plaintext have already been obtained
 def test_plaintexts():
     try:
-        with open('%s/plaintext1' % student_dir, "rt") as file:
-            file.read()
-        with open('%s/plaintext2' % student_dir, "rt") as file:
-            file.read()
-        with open('%s/plaintext3' % student_dir, "rt") as file:
-            file.read()
+        for i in range(msg_count):
+            with open('%s/plaintext%d' % (student_dir, i+1), "rt") as file:
+                file.read()
+
         return True
     except:
         return False
+
+def decipher_plaintexts():
+
+    def save_true_plaintext(idx, text):
+        with open('%s/true_plaintext%d' % (student_dir, idx), "wt") as file:
+            file.write(text)
+            print("Deciphered plaintext%d saved for %s" % (idx, student_dir))
+
+    def decipher_plaintext(i):
+        with open('%s/plaintext%d' % (student_dir, i), "rt") as file:
+            cipher = file.read()
+
+            plaintext = ciphers.rotk(cipher)
+
+            if not plaintext:
+                plaintext = ciphers.rotkn(cipher)
+
+            if not plaintext:
+                plaintext = ciphers.mistery(cipher)
+
+            if not plaintext:
+                print("-" * 20 + "Failed " + student_dir)
+                exit(1)
+            
+            save_true_plaintext(i, plaintext)
+
+    start_decipher = time.time()
+
+    for i in range(msg_count):
+        
+        tmp_time = time.time()
+
+        decipher_plaintext(i)
+
+        decipher_end = time.time()
+        print("plaintext%d deciphered in %f seconds" % (i, decipher_end-tmp_time))
+
+    print("Deciphering completed in %f seconds" % (time.time()-start_decipher))
 
 def main(passwd):
 
     passwd_pcap  = '%s/passwd.pcap'  % student_dir
     keyzip_pcap  = '%s/zip.pcap' % student_dir
     iv_pcap      = '%s/iv.pcap'      % student_dir
-    message1_pcap = '%s/ciphertext1.pcap' % student_dir
-    message2_pcap = '%s/ciphertext2.pcap' % student_dir
-    message3_pcap = '%s/ciphertext3.pcap' % student_dir
-
 
     if not passwd:
         crypted_passwd = get_crypted_passwd(passwd_pcap)
@@ -180,79 +220,28 @@ def main(passwd):
     iv = get_payload(iv_pcap).decode().strip('\n')
     # print('iv', iv)
 
-    ciphertext1 = get_payload(message1_pcap)
-    ciphertext2 = get_payload(message2_pcap)
-    ciphertext3 = get_payload(message3_pcap)
+    for i in range(msg_count):
 
-    message1 = get_message(ciphertext1, obfkey, iv, student_dir)
-    message2 = get_message(ciphertext2, obfkey, iv, student_dir)
-    message3 = get_message(ciphertext3, obfkey, iv, student_dir)
+        message_pcap = '%s/ciphertext%d.pcap' % (student_dir, i)
+        ciphertext = get_payload(message_pcap)
 
-    if message1 is None or message2 is None or message3 is None:
-        exit(2)
+        message = get_message(ciphertext, obfkey, iv, student_dir)
 
-    print("Plaintext obtained for " + student_dir)
-    # print('MESSAGE')
-    # print("message1", message1)
-    # print("message2", message2)
-    # print("message3", message3)
-
-    # print('plaintext saved in tmp/plaintext')
-
-    with open('%s/plaintext1' % student_dir, "wt") as file:
-        file.write(message1)
-    with open('%s/plaintext2' % student_dir, "wt") as file:
-        file.write(message2)
-    with open('%s/plaintext3' % student_dir, "wt") as file:
-        file.write(message3)
+        if message is None:
+            exit(2)
 
 
-def decipher_plaintexts():
+        with open('%s/plaintext%d' % (student_dir, i) "wt") as file:
+            file.write(message)
 
-    start_decipher = time.time()
+        print("Plaintext %d obtained for %s" % (i, student_dir))
 
-    with open('%s/plaintext1' % student_dir, "rt") as file:
-        cipher = file.read()
-        plaintext = ciphers.rotk(cipher)
+args = parse_args()
 
-        if plaintext is None:
-            exit(1)
-
-        with open('%s/true_plaintext1' % student_dir, "wt") as file_true:
-            file_true.write(plaintext)
-            print("Deciphered plaintext1 saved for %s!" % student_dir)
-
-    first_decipher_end = time.time()
-    print("(%f seconds)" % (first_decipher_end-start_decipher))
-
-    with open('%s/plaintext2' % student_dir, "rt") as file:
-        cipher = file.read()
-        plaintext = ciphers.rotkn(cipher)
-
-        if plaintext is None:
-            exit(1)
-
-        with open('%s/true_plaintext2' % student_dir, "wt") as file_true:
-            file_true.write(plaintext)
-            print("Deciphered plaintext2 saved for %s!" % student_dir)
-
-    second_decipher_end = time.time()
-    print("(%f seconds)" % (second_decipher_end-first_decipher_end))
-
-    print("Deciphering completed in %f seconds" % (time.time()-start_decipher))
-
-
-if len(sys.argv) < 2:
-    print("Usage: %s student_dir" % sys.argv[0])
-    exit(1)
-
-passwd = None
-
-if len(sys.argv) == 3:
-    passwd = sys.argv[2]
-
-student_dir = sys.argv[1]
+student_dir = args.student_dir
+msg_count = args.msg_count
 
 if not test_plaintexts():
-    main(passwd)
+    main(args.p)
+
 decipher_plaintexts()
