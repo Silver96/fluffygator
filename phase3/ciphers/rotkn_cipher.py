@@ -1,7 +1,6 @@
 import ciphers.common
 
 default_key = (20, 19, 18, 17)
-# default_key = (20, 19, 18, 16)
 
 def rotkn(inner_ciphertext):
 

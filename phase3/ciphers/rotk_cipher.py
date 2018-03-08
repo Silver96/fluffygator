@@ -1,6 +1,5 @@
 import ciphers.common
 
-# default_key = 12
 default_key = 13
 
 def rotk(inner_ciphertext):

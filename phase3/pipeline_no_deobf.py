@@ -20,8 +20,6 @@ from datetime import datetime
 from time import sleep
 from passwds.passwd_cracker import PasswdCracker
 
-NSA_SERVER = ('128.114.59.42', 2001)
-
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("student_dir", help="Working directory for the script")
@@ -129,7 +127,7 @@ def decipher_plaintexts():
     def decipher_plaintext(i):
         with open('%s/plaintext%d' % (student_dir, i), "rt") as file:
             cipher = file.read()
-
+            
             plaintext = ciphers.rotk(cipher)
 
             if not plaintext:
@@ -161,6 +159,10 @@ args = parse_args()
 
 student_dir = args.student_dir
 msg_count = args.msg_count
+
+print("-"*80)
+print("Started pipeline for %s" % student_dir)
+print("-"*80)
 
 if not test_plaintexts():
     get_plaintexts(args.p)

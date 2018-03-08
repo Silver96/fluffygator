@@ -20,8 +20,6 @@ from datetime import datetime
 from time import sleep
 from passwds.passwd_cracker import PasswdCracker
 
-NSA_SERVER = ('128.114.59.42', 2001)
-
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("student_dir", help="Working directory for the script")

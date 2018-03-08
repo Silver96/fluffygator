@@ -2,6 +2,7 @@ import sys
 import socket
 import os
 import subprocess
+import time
 
 FAILED_LIST = "failed"
 PIPELINE_FILE = "pipeline_no_deobf.py"
@@ -14,6 +15,8 @@ def main():
     students_dir = sys.argv[1]
     msg_count = int(sys.argv[2])
 
+    start = time.time()
+
     with open(FAILED_LIST, "wt") as f_failed:
 
         for student_id in range(len(os.listdir(students_dir))):
@@ -25,4 +28,9 @@ def main():
                 f_failed.write(str(student_id))
                 f_failed.write("\n")
                 f_failed.flush()
+
+    print("-"*40)
+    print("Pipeline completed, took %d seconds" % (time.time()-start))
+    print("-"*40)
+
 main()

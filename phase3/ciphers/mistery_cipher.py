@@ -1,18 +1,18 @@
 import json
 import os
 import sys
+import numpy as np
+import ciphers.common
 
 from string import punctuation, digits
 
-def generate_dictionary():
-    dictionary = ["a b c d e",
-                  "f g h i j",
-                  "k l m n o",
-                  "p q r s t",
-                  "u v w x y"]
+default_key = 0
 
-    dictionary = [x.split(" ") for x in dictionary]
-
+def generate_dictionary(k):
+    dictionary = np.array(list("abcdefghijklmnopqrstuvwxy"))
+    dictionary = np.reshape(dictionary, (5,5))
+    dictionary = np.roll(dictionary, k)
+    
     key_dict = {}
 
     for i in range(5):
@@ -38,5 +38,26 @@ def decipher_plaintext(ciphertext, key_dict):
 
 
 def mistery(cipher):
-    key_dict = generate_dictionary()
-    return decipher_plaintext(cipher, key_dict)
+
+    def do_mistery_decipher(cipher, k):
+        key_dict = generate_dictionary(k)
+        return decipher_plaintext(cipher, key_dict)
+
+    k = default_key
+    result = do_mistery_decipher(cipher, k)
+    
+    if not result:
+        return None
+
+    if not ciphers.common.makes_sense(result):
+
+        for k in range(1, ciphers.common.length):
+            result = do_mistery_decipher(cipher, k)
+            if ciphers.common.makes_sense(result):
+                break
+
+    if not ciphers.common.makes_sense(result):
+        return None
+
+    print("--------------------- Used %d offset" % k)
+    return result
