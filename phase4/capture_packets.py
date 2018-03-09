@@ -3,6 +3,7 @@
 import logging
 import socket
 import argparse
+import time
 from time import sleep
 from datetime import datetime
 from datetime import timedelta
@@ -60,7 +61,7 @@ def parse_args():
     parser.add_argument("-t", metavar="hh:mm", type=valid_time, help="time to start capturing (allow 2 mins before that)")
     parser.add_argument("-m", metavar="max_pkts", type=int, help="maximum number of packets to capture")
     parser.add_argument("-p", action='store_true', help="enables the prefilter, discarding packets that don't contain a payload")
-    parser.add_argument("--timeout", action='store_true', help="enables closing connection on timeout after receiving packets")
+    parser.add_argument("--timeout", type=int, help="enables closing connection on timeout after receiving packets")
     parser.add_argument("--working_dir", type=valid_dir)
     return parser.parse_args()
 
@@ -69,7 +70,8 @@ def capture(args):
 
     max_pkts = args.m
     prefilter = args.p
-    
+    timeout = args.timeout
+
     dst_dir = args.working_dir if args.working_dir else 'packets/%s' % make_timestamp()
 
     if not args.working_dir:
@@ -85,10 +87,18 @@ def capture(args):
 
         i = 0
         try:
-            print("Started packet capture!")
+            print("Started packet capture")
+            last_capture = -1
+
             while True:
                 # Capture all packets
                 packet = sock.recv(MAX_SIZE)
+
+                if timeout and i > 0 and (time.time()-last_capture) > timeout:
+                    print("Timeout exceeded, quitting")
+                    break
+
+                last_capture = time.time()
 
                 # If prefiltering is enabled skip packets with no payload
                 if prefilter:
@@ -119,4 +129,4 @@ if params.t:
         print("start_time too close (need at least 2 minutes delta), quitting")
         exit(1)
 
-capture(params.m, params.p)
+capture(params)

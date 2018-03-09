@@ -13,7 +13,7 @@ def main():
 
     def capture_packets(args):
         print_main_message("Starting packet capture...")
-        cmd = "python3 capture_packets.py --working-dir %s/packets/" % args.working_dir + ((" -t %s" % args.start_time) if args.start_time else "") + ((" -m %d" % args.max_packets) if args.max_packets else "") + (" --timeout" if args.timeout else "")
+        cmd = "python3 capture_packets.py --working-dir %s/packets/" % args.working_dir + ((" -t %s" % args.start_time) if args.start_time else "") + ((" -m %d" % args.max_packets) if args.max_packets else "") + ((" --timeout %d" % args.timeout) if args.timeout else "")
         subprocess.run(cmd.split(" "), stdout=stdout, stderr=stderr)
         print_main_message("%d packets captured" % len(os.listdir(args.working_dir+"/packets/")))
 
@@ -87,7 +87,7 @@ def main():
         # Capture arguments
         parser.add_argument("--start-time", help="Packet capture start time")
         parser.add_argument("--max-packets", type=int, help="Maximum number of packets to capture")
-        parser.add_argument("--timeout", action="store_true", help="Enables capture interruption after timeout (1 min without packets)")
+        parser.add_argument("--timeout", type=int, help="Enables capture interruption after timeout seconds without packets")
 
         # Inspect arguments
         parser.add_argument("--tuples-count", type=int, help="Number of tuples", required=True)
