@@ -62,7 +62,7 @@ def parse_args():
     parser.add_argument("-m", metavar="max_pkts", type=int, help="maximum number of packets to capture")
     parser.add_argument("-p", action='store_true', help="enables the prefilter, discarding packets that don't contain a payload")
     parser.add_argument("--timeout", type=int, help="enables closing connection on timeout after receiving packets")
-    parser.add_argument("--working_dir", type=valid_dir)
+    parser.add_argument("--working-dir", type=valid_dir)
     return parser.parse_args()
 
 
