@@ -5,8 +5,6 @@ length = len(ascii_lowercase)
 # Dictionary filename for "meaningfulness" check
 dictionary_filename = 'ciphers/english_dictionary.txt'
 
-# Threshold for "meaningfulness" check
-sense_threshold = 25
 
 def rot(text, *keys):
 
@@ -29,21 +27,39 @@ def rot(text, *keys):
 
     return "".join(rotated)
 
-# TODO: find a better way to avoid false positives
+
+def load_dict():
+    with open(dictionary_filename, 'rt') as d:
+        words = [line.lower().strip('\n ') for line in d.readlines()[1:]] ## discard first line comment
+        return set(words)
+
+dictionary = load_dict()
+
+
 def makes_sense(msg):
+    words = msg.lower().replace('\n', ' ').split(' ')
+    words = [word.strip('\n ') for word in words]
+    words = [word for word in words if len(word) > 0]
+    
+    # If more than a half words in the message are not present
+    # in the dictionary the message does not make sense
+    bullshit_threshold = len(words) * 0.5
 
-    def load_dict():
+    count_bullshit = 0
 
-        with open(dictionary_filename, 'rt') as d:
-            words = [line.lower()[:-1] for line in d.readlines()[1:]] ## discard first line comment
-            return set(words)
-
-    dictionary = load_dict()
-    words = msg.lower().split(' ')
-    count = 0
-
+    # bullshits = []
     for word in words:
-        if word in dictionary:
-            count += 1
+        if word not in dictionary:
+            count_bullshit += 1
+            # bullshits.append(word)
 
-    return count >= sense_threshold
+    print('count_bullshit', count_bullshit)
+    print('bullshit_threshold', bullshit_threshold)
+
+    return count_bullshit < bullshit_threshold
+    # if result:
+    #     print(bullshits)
+    #     import time
+    #     time.sleep(10)
+    # return result
+
