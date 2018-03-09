@@ -64,6 +64,7 @@ class PasswdCracker:
     def __init__(self, pair_dict_file='pairs.pickle'):
         
         self.pairs_filename = os.path.abspath(os.path.join(os.path.dirname(__file__), pair_dict_file))
+        self.gen_passwds_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), 'generated_passwds/'))
         
         print('loading pairs from %s' % self.pairs_filename)
         self.load_pairs()
@@ -71,7 +72,7 @@ class PasswdCracker:
 
     # TODO variable password length?
     def all_passwds(self):
-        pair_list = list(self.pairs)
+        pair_list = [p for p in sorted(self.pairs)]
         for a in pair_list:
             for b in pair_list:
                 for c in pair_list:
@@ -86,10 +87,35 @@ class PasswdCracker:
     def crack(self, crypted_pw):
         salt = crypted_pw[:2]
 
+        ## Generated password
+        if salt in ['ar','ep','it','pa','ss','to']:
+            all_passwds_gen = self.all_passwds()
+            
+            N_MAX = 8000000
+            N = 0
+            filename = self.gen_passwds_folder + '/' + salt + '0'
+            with open(filename, 'rt') as f:
+                for pw in all_passwds_gen:
+                    N += 1
+                    if N == N_MAX:
+                        break
+                    crypted = f.readline().strip(' \n')
+                    if crypted == crypted_pw:
+                        return pw
+
+            filename = self.gen_passwds_folder + '/' + salt + '1'
+            with open(filename, 'rt') as f:
+                for pw in all_passwds_gen:
+                    crypted = f.readline().strip(' \n')
+                    if crypted == crypted_pw:
+                        return pw
+
+
         for pw in self.all_passwds():
             crypted = crypt(pw, salt)
             if crypted == crypted_pw:
                 return pw
+
         return None
 
     def crack_nsa(self, crypted_pw):
@@ -118,6 +144,3 @@ class PasswdCracker:
         with open(self.pairs_filename, "rb") as file:
             self.pairs = pickle.load(file)
 
-
-
-    
