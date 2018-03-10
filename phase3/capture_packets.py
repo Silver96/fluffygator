@@ -13,7 +13,7 @@ from scapy.all import *
 
 MAX_SIZE = 10000
 
-ROUTER = ("127.0.0.1", 59429)#('128.114.59.42', 5001)
+ROUTER = ('128.114.59.42', 5001)
 
 
 def dump_packet(packet, timestamp, idx):
