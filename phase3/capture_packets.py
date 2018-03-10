@@ -13,17 +13,12 @@ from scapy.all import *
 
 MAX_SIZE = 10000
 
-PACKETS_STEP = 6
-
-ROUTER = ('128.114.59.42', 5001)
+ROUTER = ("127.0.0.1", 59429)#('128.114.59.42', 5001)
 
 
 def dump_packet(packet, timestamp, idx):
     with open('packets/%s/packet%d.pcap' % (timestamp, idx), 'wb') as p:
         p.write(packet)
-
-    if idx % PACKETS_STEP == 0:
-        print("Captured %d packets..." % idx)
 
 
 def make_timestamp():
@@ -70,8 +65,11 @@ def capture(max_pkts=None, prefilter=False):
             sleep(1)
 
         i = 0
+        packets = []
+
         try:
             print("Started packet capture!")
+
             while True:
                 # Capture all packets
                 packet = sock.recv(MAX_SIZE)
@@ -83,7 +81,8 @@ def capture(max_pkts=None, prefilter=False):
                     if not (p or hasattr(p, "load")):
                         continue
 
-                dump_packet(packet, timestamp, i)
+                packets.append(packet)
+
 
                 i += 1
 
@@ -94,6 +93,9 @@ def capture(max_pkts=None, prefilter=False):
         except KeyboardInterrupt:
             print('\nStop capturing packets')
 
+        for i, packet in enumerate(packets):
+            print("Dumping packet %d" % i)
+            dump_packet(packet, timestamp, i)
 
 params = parse_args()
 

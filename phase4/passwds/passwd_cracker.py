@@ -66,7 +66,7 @@ class PasswdCracker:
         self.pairs_filename = os.path.abspath(os.path.join(os.path.dirname(__file__), pair_dict_file))
         self.gen_passwds_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), 'generated_passwds/'))
         
-        print('loading pairs from %s' % self.pairs_filename)
+        # print('loading pairs from %s' % self.pairs_filename)
         self.load_pairs()
 
 

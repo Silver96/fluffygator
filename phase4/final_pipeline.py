@@ -13,12 +13,17 @@ def main():
 
     def capture_packets(args):
         print_main_message("Starting packet capture...")
+        os.mkdir(args.working_dir+"/packets/")
         cmd = "python3 capture_packets.py --working-dir %s/packets/" % args.working_dir + ((" -t %s" % args.start_time) if args.start_time else "") + ((" -m %d" % args.max_packets) if args.max_packets else "") + ((" --timeout %d" % args.timeout) if args.timeout else "")
-        subprocess.run(cmd.split(" "), stdout=stdout, stderr=stderr)
+        try:
+            subprocess.run(cmd.split(" "), stdout=stdout, stderr=stderr)
+        except KeyboardInterrupt:
+            pass
         print_main_message("%d packets captured" % len(os.listdir(args.working_dir+"/packets/")))
 
     def inspect_packets(args):
         print_main_message("Starting packet inspection...")
+        os.mkdir(args.working_dir+"/students/")
         cmd = "python3 inspect_packets.py %s %d %d --working-dir %s/students/" % (args.working_dir+"/packets/", args.tuples_count, args.msg_count, args.working_dir)
         subprocess.run(cmd.split(" "), stdout=stdout, stderr=stderr)
         print_main_message("%d tuple directories generated" % len(os.listdir(args.working_dir+"/students/")))
@@ -63,6 +68,8 @@ def main():
 
             l.append(subprocess.Popen(cmd.split(' '), stdout=stdout, stderr=stderr))
 
+        sleep(1)
+
         print_main_message("All pipeline processes returned")
 
     def parse_args():
@@ -105,25 +112,25 @@ def main():
 
         return parser.parse_args()
 
-    try:   
-        args = parse_args()
+    # try:   
+    args = parse_args()
 
-        stdout = stderr = None
+    stdout = stderr = None
 
-        if not args.verbose:
-            stdout = stderr = subprocess.DEVNULL
+    if not args.verbose:
+        stdout = stderr = subprocess.DEVNULL
 
-        if not args.no_capture:
-            capture_packets(args)
+    if not args.no_capture:
+        capture_packets(args)
 
-        if not args.no_inspect:
-            inspect_packets(args)
+    if not args.no_inspect:
+        inspect_packets(args)
 
-        if not args.no_decrypt:
-            cast_pipelines(args)
+    if not args.no_decrypt:
+        cast_pipelines(args)
 
-    except KeyboardInterrupt:
-        print("User terminated")
+    # except KeyboardInterrupt:
+    #     print("User terminated")
 
 start_time = time.time()
 

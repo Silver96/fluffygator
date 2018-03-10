@@ -13,6 +13,7 @@ import sys
 import socket
 import time
 import argparse
+import errno
 
 from datetime import datetime
 from time import sleep
@@ -66,14 +67,12 @@ def inspect(args):
     pkts_per_tuple = 3 + msg_count
     student_tuples = [idxs[i:i+pkts_per_tuple] for i in range(0, len(idxs), pkts_per_tuple)]
 
-    base_dir = 'students/' + os.path.basename(os.path.normpath(packet_dir))
+    base_dir = 'students/' + os.path.basename(os.path.normpath(packet_dir)) + "/"
 
     if args.working_dir:
-       base_dir = args.working_dir
-
-    base_dir += "/"
-
-    os.mkdir(base_dir)
+        base_dir = args.working_dir + "/"
+    else: 
+        os.mkdir(base_dir)
 
     for i, t in enumerate(student_tuples):
         student_dir = base_dir + str(i) + '/'
