@@ -51,7 +51,7 @@ def mistery(cipher):
 
     if not ciphers.common.makes_sense(result):
 
-        for k in range(1, ciphers.common.length):
+        for k in range(0, ciphers.common.length):
             result = do_mistery_decipher(cipher, k)
             if ciphers.common.makes_sense(result):
                 break

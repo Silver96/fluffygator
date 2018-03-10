@@ -53,8 +53,8 @@ def makes_sense(msg):
             count_bullshit += 1
             # bullshits.append(word)
 
-    print('count_bullshit', count_bullshit)
-    print('bullshit_threshold', bullshit_threshold)
+    # print('count_bullshit', count_bullshit)
+    # print('bullshit_threshold', bullshit_threshold)
 
     return count_bullshit < bullshit_threshold
     # if result:
